@@ -48,7 +48,7 @@ export default function Newsletter() {
           fontSize: '32px'
         }}
       >
-        Join The VedaByte Newsletter
+        Join The VedaByte Tech Newsletter
       </h2>
 
       <p
