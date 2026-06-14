@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
 
 export async function saveBookmark(userId, article) {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('bookmarks')
     .insert([
       {
@@ -12,14 +12,9 @@ export async function saveBookmark(userId, article) {
         article_image: article.image
       }
     ])
-    .select()
-
-  console.log('BOOKMARK DATA:', data)
-  console.error('BOOKMARK ERROR FULL')
-console.error(JSON.stringify(error, null, 2))
-console.error(error)
 
   if (error) {
+    console.error('SAVE BOOKMARK ERROR:', error)
     return false
   }
 
@@ -29,11 +24,12 @@ console.error(error)
 export async function getBookmarks(userId) {
   const { data, error } = await supabase
     .from('bookmarks')
-    .select('*')
+    .select('id,user_id,article_id,article_title,article_category,article_image,created_at')
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.error(error)
+    console.error('GET BOOKMARKS ERROR:', error)
     return []
   }
 
@@ -47,7 +43,7 @@ export async function removeBookmark(bookmarkId) {
     .eq('id', bookmarkId)
 
   if (error) {
-    console.error(error)
+    console.error('REMOVE BOOKMARK ERROR:', error)
     return false
   }
 
