@@ -5,10 +5,12 @@ import news from '../data/news'
 export default function Search() {
   const [query, setQuery] = useState('')
 
+  const cleanQuery = query.trim().toLowerCase()
+
   const filteredNews = news.filter(article =>
-    article.title.toLowerCase().includes(query.toLowerCase()) ||
-    article.description.toLowerCase().includes(query.toLowerCase()) ||
-    article.category.toLowerCase().includes(query.toLowerCase())
+    article.title.toLowerCase().includes(cleanQuery) ||
+    article.description.toLowerCase().includes(cleanQuery) ||
+    article.category.toLowerCase().includes(cleanQuery)
   )
 
   return (
@@ -16,58 +18,137 @@ export default function Search() {
       style={{
         maxWidth: '1400px',
         margin: '0 auto',
-        padding: '40px 20px'
+        padding: '45px 20px'
       }}
     >
-      <h1
+      <div
         style={{
-          color: '#fff',
-          marginBottom: '20px'
-        }}
-      >
-        Search Articles
-      </h1>
-
-      <input
-        type="text"
-        placeholder="Search AI, Startups, Security..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={{
-          width: '100%',
-          padding: '16px',
-          background: '#111',
+          background: '#111111',
           border: '1px solid #232323',
-          borderRadius: '12px',
-          color: '#fff',
-          marginBottom: '30px',
-          fontSize: '16px'
-        }}
-      />
-
-      <p
-        style={{
-          color: '#9CA3AF',
-          marginBottom: '25px'
+          borderRadius: '22px',
+          padding: '32px',
+          marginBottom: '35px'
         }}
       >
-        {filteredNews.length} results found
-      </p>
+        <span
+          style={{
+            color: '#D4AF37',
+            fontWeight: '800',
+            textTransform: 'uppercase',
+            fontSize: '13px'
+          }}
+        >
+          Search VedaByte
+        </span>
+
+        <h1
+          style={{
+            color: '#FFFFFF',
+            marginTop: '10px',
+            marginBottom: '12px',
+            fontSize: '42px',
+            lineHeight: '1.15'
+          }}
+        >
+          Find technology stories faster
+        </h1>
+
+        <p
+          style={{
+            color: '#D1D5DB',
+            marginBottom: '24px',
+            lineHeight: '1.7'
+          }}
+        >
+          Search AI, startups, cybersecurity, programming, cloud and gadgets coverage.
+        </p>
+
+        <input
+          type="text"
+          placeholder="Search articles, categories, topics..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          autoFocus
+          style={{
+            width: '100%',
+            padding: '16px 18px',
+            background: '#0A0A0A',
+            border: '1px solid #232323',
+            borderRadius: '14px',
+            color: '#FFFFFF',
+            fontSize: '16px',
+            outline: 'none'
+          }}
+        />
+      </div>
 
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-          gap: '25px'
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '15px',
+          marginBottom: '25px'
         }}
       >
-        {filteredNews.map(article => (
-          <NewsCard
-            key={article.id}
-            {...article}
-          />
-        ))}
+        <h2
+          style={{
+            color: '#D4AF37',
+            fontSize: '28px'
+          }}
+        >
+          Search Results
+        </h2>
+
+        <p
+          style={{
+            color: '#9CA3AF'
+          }}
+        >
+          {filteredNews.length} result{filteredNews.length !== 1 ? 's' : ''} found
+        </p>
       </div>
+
+      {filteredNews.length === 0 ? (
+        <div
+          style={{
+            background: '#111111',
+            border: '1px solid #232323',
+            borderRadius: '18px',
+            padding: '40px',
+            textAlign: 'center',
+            color: '#D1D5DB'
+          }}
+        >
+          <h3
+            style={{
+              color: '#FFFFFF',
+              marginBottom: '10px'
+            }}
+          >
+            No articles found
+          </h3>
+
+          <p>
+            Try searching for AI, Startups, Security, Programming, Cloud or Gadgets.
+          </p>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
+            gap: '25px'
+          }}
+        >
+          {filteredNews.map(article => (
+            <NewsCard
+              key={article.id}
+              {...article}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

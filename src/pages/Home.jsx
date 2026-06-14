@@ -1,13 +1,38 @@
+import { useEffect, useState } from 'react'
+
 import NewsCard from '../components/news/NewsCard'
-import news from '../data/news'
 import Newsletter from '../components/newsletter/Newsletter'
+import localNews from '../data/news'
+import { getTopTechNews } from '../services/newsService'
 
 export default function Home() {
-  const featured = news[0]
+  const [articles, setArticles] = useState(localNews)
+  const [loading, setLoading] = useState(true)
+  const [usingLiveNews, setUsingLiveNews] = useState(false)
 
-  const aiNews = news.filter(article => article.category === 'AI')
-  const startupNews = news.filter(article => article.category === 'Startups')
-  const securityNews = news.filter(article => article.category === 'Security')
+  useEffect(() => {
+    async function loadLiveNews() {
+      const liveArticles = await getTopTechNews()
+
+      if (liveArticles.length > 0) {
+        setArticles(liveArticles)
+        setUsingLiveNews(true)
+      } else {
+        setArticles(localNews)
+        setUsingLiveNews(false)
+      }
+
+      setLoading(false)
+    }
+
+    loadLiveNews()
+  }, [])
+
+  const featured = articles[0]
+
+  const aiNews = articles.filter(article => article.category === 'AI')
+  const startupNews = articles.filter(article => article.category === 'Startups')
+  const securityNews = articles.filter(article => article.category === 'Security')
 
   return (
     <div
@@ -17,8 +42,6 @@ export default function Home() {
         padding: '30px 20px'
       }}
     >
-      {/* BREAKING BAR */}
-
       <div
         style={{
           background: '#D4AF37',
@@ -29,193 +52,157 @@ export default function Home() {
           marginBottom: '35px'
         }}
       >
-        🔥 BREAKING • Latest AI, Startup & Cybersecurity News
+        🔥 {usingLiveNews ? 'LIVE TECHNOLOGY NEWS' : 'BREAKING'} • Latest AI, Startup & Cybersecurity News
       </div>
 
-      {/* FEATURED */}
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: '30px',
-          marginBottom: '50px'
-        }}
-      >
+      {loading && (
         <div
           style={{
             background: '#111111',
             border: '1px solid #232323',
-            borderRadius: '20px',
-            overflow: 'hidden'
+            color: '#D1D5DB',
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '30px'
           }}
         >
-          <img
-            src={featured.image}
-            alt={featured.title}
-            style={{
-              width: '100%',
-              height: '450px',
-              objectFit: 'cover'
-            }}
-          />
-
-          <div style={{ padding: '25px' }}>
-            <span
-              style={{
-                color: '#D4AF37',
-                fontWeight: '700',
-                letterSpacing: '1px'
-              }}
-            >
-              FEATURED STORY
-            </span>
-
-            <h1
-              style={{
-                color: '#FFFFFF',
-                marginTop: '12px',
-                fontSize: '42px',
-                lineHeight: '1.2'
-              }}
-            >
-              {featured.title}
-            </h1>
-
-            <p
-              style={{
-                color: '#D1D5DB',
-                marginTop: '16px',
-                fontSize: '16px',
-                lineHeight: '1.8'
-              }}
-            >
-              {featured.description}
-            </p>
-          </div>
+          Loading latest technology news...
         </div>
+      )}
 
-        {/* TRENDING */}
-
+      {featured && (
         <div
           style={{
-            background: '#111111',
-            border: '1px solid #232323',
-            borderRadius: '20px',
-            padding: '25px'
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr',
+            gap: '30px',
+            marginBottom: '50px'
           }}
         >
-          <h3
+          <div
             style={{
-              color: '#D4AF37',
-              marginBottom: '20px',
-              fontSize: '24px'
+              background: '#111111',
+              border: '1px solid #232323',
+              borderRadius: '20px',
+              overflow: 'hidden'
             }}
           >
-            Trending
-          </h3>
-
-          {news.slice(1, 6).map(article => (
-            <div
-              key={article.id}
+            <img
+              src={featured.image}
+              alt={featured.title}
               style={{
-                color: '#FFFFFF',
-                marginBottom: '18px',
-                lineHeight: '1.6',
-                borderBottom: '1px solid #232323',
-                paddingBottom: '12px'
+                width: '100%',
+                height: '450px',
+                objectFit: 'cover'
+              }}
+            />
+
+            <div style={{ padding: '25px' }}>
+              <span
+                style={{
+                  color: '#D4AF37',
+                  fontWeight: '700',
+                  letterSpacing: '1px'
+                }}
+              >
+                FEATURED STORY
+              </span>
+
+              <h1
+                style={{
+                  color: '#FFFFFF',
+                  marginTop: '12px',
+                  fontSize: '42px',
+                  lineHeight: '1.2'
+                }}
+              >
+                {featured.title}
+              </h1>
+
+              <p
+                style={{
+                  color: '#D1D5DB',
+                  marginTop: '16px',
+                  fontSize: '16px',
+                  lineHeight: '1.8'
+                }}
+              >
+                {featured.description}
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: '#111111',
+              border: '1px solid #232323',
+              borderRadius: '20px',
+              padding: '25px'
+            }}
+          >
+            <h3
+              style={{
+                color: '#D4AF37',
+                marginBottom: '20px',
+                fontSize: '24px'
               }}
             >
-              📰 {article.title}
-            </div>
-          ))}
+              Trending
+            </h3>
+
+            {articles.slice(1, 6).map(article => (
+              <div
+                key={article.id}
+                style={{
+                  color: '#FFFFFF',
+                  marginBottom: '18px',
+                  lineHeight: '1.6',
+                  borderBottom: '1px solid #232323',
+                  paddingBottom: '12px'
+                }}
+              >
+                📰 {article.title}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* AI */}
+      {!usingLiveNews && (
+        <>
+          <h2 style={{ color: '#D4AF37', fontSize: '32px', marginBottom: '25px' }}>
+            🤖 AI News
+          </h2>
 
-      <h2
-        style={{
-          color: '#D4AF37',
-          fontSize: '32px',
-          marginBottom: '25px'
-        }}
-      >
-        🤖 AI News
-      </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '25px', marginBottom: '60px' }}>
+            {aiNews.slice(0, 4).map(article => (
+              <NewsCard key={article.id} {...article} />
+            ))}
+          </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-          gap: '25px',
-          marginBottom: '60px'
-        }}
-      >
-        {aiNews.slice(0, 4).map(article => (
-          <NewsCard key={article.id} {...article} />
-        ))}
-      </div>
+          <h2 style={{ color: '#D4AF37', fontSize: '32px', marginBottom: '25px' }}>
+            🚀 Startup News
+          </h2>
 
-      {/* STARTUPS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '25px', marginBottom: '60px' }}>
+            {startupNews.slice(0, 4).map(article => (
+              <NewsCard key={article.id} {...article} />
+            ))}
+          </div>
 
-      <h2
-        style={{
-          color: '#D4AF37',
-          fontSize: '32px',
-          marginBottom: '25px'
-        }}
-      >
-        🚀 Startup News
-      </h2>
+          <h2 style={{ color: '#D4AF37', fontSize: '32px', marginBottom: '25px' }}>
+            🔐 Cybersecurity News
+          </h2>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-          gap: '25px',
-          marginBottom: '60px'
-        }}
-      >
-        {startupNews.slice(0, 4).map(article => (
-          <NewsCard key={article.id} {...article} />
-        ))}
-      </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '25px', marginBottom: '60px' }}>
+            {securityNews.slice(0, 4).map(article => (
+              <NewsCard key={article.id} {...article} />
+            ))}
+          </div>
+        </>
+      )}
 
-      {/* SECURITY */}
-
-      <h2
-        style={{
-          color: '#D4AF37',
-          fontSize: '32px',
-          marginBottom: '25px'
-        }}
-      >
-        🔐 Cybersecurity News
-      </h2>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-          gap: '25px',
-          marginBottom: '60px'
-        }}
-      >
-        {securityNews.slice(0, 4).map(article => (
-          <NewsCard key={article.id} {...article} />
-        ))}
-      </div>
-
-      {/* ALL NEWS */}
-
-      <h2
-        style={{
-          color: '#D4AF37',
-          fontSize: '32px',
-          marginBottom: '25px'
-        }}
-      >
+      <h2 style={{ color: '#D4AF37', fontSize: '32px', marginBottom: '25px' }}>
         📰 Latest Technology News
       </h2>
 
@@ -226,13 +213,11 @@ export default function Home() {
           gap: '25px'
         }}
       >
-        {news.map(article => (
-          <NewsCard
-            key={article.id}
-            {...article}
-          />
+        {articles.map(article => (
+          <NewsCard key={article.id} {...article} />
         ))}
       </div>
+
       <Newsletter />
     </div>
   )

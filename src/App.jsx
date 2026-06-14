@@ -7,6 +7,7 @@ import Search from './pages/Search'
 import Category from './pages/Category'
 import Article from './pages/Article'
 import Bookmarks from './pages/Bookmarks'
+import Footer from './components/layout/Footer'
 
 function App() {
   return (
@@ -42,7 +43,10 @@ function App() {
 />
 
         </Routes>
+
+        
       </div>
+      <Footer />
     </>
   )
 }
