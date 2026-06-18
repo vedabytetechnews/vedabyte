@@ -11,11 +11,14 @@ import Bookmarks from './pages/Bookmarks'
 import Admin from './pages/Admin'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
+
 import AdminComments from './pages/AdminComments'
 import AdminSubscribers from './pages/AdminSubscribers'
 import AdminUsers from './pages/AdminUsers'
-import AdminRoute from './components/AdminRoute'
 import AdminArticles from './pages/AdminArticles'
+import AdminNewsletter from './pages/AdminNewsletter'
+
+import AdminRoute from './components/AdminRoute'
 
 function App() {
   return (
@@ -24,6 +27,7 @@ function App() {
 
       <div style={{ paddingTop: '70px' }}>
         <Routes>
+
           <Route
             path="/"
             element={<Home />}
@@ -50,11 +54,6 @@ function App() {
           />
 
           <Route
-            path="/admin"
-            element={<Admin />}
-          />
-
-          <Route
             path="/profile"
             element={<Profile />}
           />
@@ -64,29 +63,43 @@ function App() {
             element={<Settings />}
           />
 
-        <Route
-  path="/admin/comments"
-  element={<AdminComments />}
-/>
+          <Route
+            path="/admin"
+            element={<Admin />}
+          />
 
-<Route
-  path="/admin/subscribers"
-  element={<AdminSubscribers />}
-/>
+          <Route
+            path="/admin/comments"
+            element={<AdminComments />}
+          />
 
-        <Route
-  path="/admin/users"
-  element={<AdminUsers />}
-/>
+          <Route
+            path="/admin/users"
+            element={<AdminUsers />}
+          />
 
-        <Route
-  path="/admin/articles"
-  element={
-    <AdminRoute>
-      <AdminArticles />
-    </AdminRoute>
-  }
-/>
+          <Route
+            path="/admin/subscribers"
+            element={<AdminSubscribers />}
+          />
+
+          <Route
+            path="/admin/articles"
+            element={
+              <AdminRoute>
+                <AdminArticles />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/newsletter"
+            element={
+              <AdminRoute>
+                <AdminNewsletter />
+              </AdminRoute>
+            }
+          />
 
         </Routes>
       </div>
