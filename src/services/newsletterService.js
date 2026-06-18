@@ -1,5 +1,28 @@
 import { supabase } from '../lib/supabase'
 
+async function syncToBrevo(email) {
+  try {
+    const response = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      console.warn('Brevo sync failed:', data)
+    }
+
+    return response.ok
+  } catch (error) {
+    console.warn('Brevo sync skipped or failed:', error)
+    return false
+  }
+}
+
 export async function subscribeEmail(email) {
   const cleanEmail = email.trim().toLowerCase()
 
@@ -18,9 +41,11 @@ export async function subscribeEmail(email) {
   }
 
   if (existing) {
+    await syncToBrevo(cleanEmail)
+
     return {
       success: false,
-      message: 'This email is already subscribed.'
+      message: 'This email is already subscribed. We also checked Brevo sync.'
     }
   }
 
@@ -41,17 +66,7 @@ export async function subscribeEmail(email) {
     }
   }
 
-  try {
-    await fetch('/api/subscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email: cleanEmail })
-    })
-  } catch (error) {
-    console.warn('Brevo sync skipped in local dev:', error)
-  }
+  await syncToBrevo(cleanEmail)
 
   return {
     success: true,
