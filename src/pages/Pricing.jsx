@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { createOrder } from '../services/paymentService'
+
+
 import {
   getUserSubscription,
-  createFreeSubscription
+  createFreeSubscription,
+  activatePro
 } from '../services/subscriptionService'
 
 export default function Pricing() {
@@ -61,10 +64,14 @@ export default function Pricing() {
         theme: {
           color: '#D4AF37'
         },
-        handler: function (response) {
-          alert('Payment successful! Next step: activate Pro subscription.')
-          console.log('Razorpay success:', response)
-        }
+       handler: async function (response) {
+  await activatePro(
+    user.id,
+    response.razorpay_payment_id
+  )
+
+  alert('Pro subscription activated!')
+}
       }
 
       const razorpay = new window.Razorpay(options)

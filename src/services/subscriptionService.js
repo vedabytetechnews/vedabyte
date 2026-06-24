@@ -38,3 +38,19 @@ export async function createFreeSubscription(user) {
 
   return data
 }
+
+export async function activatePro(userId, paymentId) {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .update({
+      plan: 'pro',
+      status: 'active',
+      razorpay_payment_id: paymentId
+    })
+    .eq('user_id', userId)
+
+  if (error) throw error
+
+  return data
+}
+
