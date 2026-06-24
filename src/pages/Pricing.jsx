@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { createOrder } from '../services/paymentService'
 import {
   getUserSubscription,
   createFreeSubscription
@@ -39,11 +40,41 @@ export default function Pricing() {
       return
     }
 
-    setLoading(true)
+    if (planName !== 'Pro') return
 
-    alert('Razorpay payment integration will be connected in the next step.')
+    try {
+      setLoading(true)
 
-    setLoading(false)
+      const order = await createOrder()
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'VedaByte',
+        description: 'VedaByte Pro Subscription',
+        order_id: order.id,
+        prefill: {
+          name: user?.user_metadata?.full_name || 'VedaByte User',
+          email: user?.email
+        },
+        theme: {
+          color: '#D4AF37'
+        },
+        handler: function (response) {
+          alert('Payment successful! Next step: activate Pro subscription.')
+          console.log('Razorpay success:', response)
+        }
+      }
+
+      const razorpay = new window.Razorpay(options)
+      razorpay.open()
+    } catch (error) {
+      console.error(error)
+      alert('Unable to start payment. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const currentPlan = subscription?.plan || 'free'
@@ -175,11 +206,13 @@ export default function Pricing() {
                   cursor: isCurrent || loading ? 'default' : 'pointer'
                 }}
               >
-                {isCurrent
-                  ? 'Current Plan'
-                  : plan.name === 'Pro'
-                    ? 'Upgrade to Pro'
-                    : 'Contact Sales'}
+                {loading && plan.name === 'Pro'
+                  ? 'Opening Payment...'
+                  : isCurrent
+                    ? 'Current Plan'
+                    : plan.name === 'Pro'
+                      ? 'Upgrade to Pro'
+                      : 'Contact Sales'}
               </button>
             </div>
           )
