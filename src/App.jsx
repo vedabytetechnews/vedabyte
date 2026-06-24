@@ -17,7 +17,7 @@ import AdminSubscribers from './pages/AdminSubscribers'
 import AdminUsers from './pages/AdminUsers'
 import AdminArticles from './pages/AdminArticles'
 import AdminNewsletter from './pages/AdminNewsletter'
-
+import Pricing from './pages/Pricing'
 import AdminRoute from './components/AdminRoute'
 
 function App() {
@@ -100,6 +100,8 @@ function App() {
               </AdminRoute>
             }
           />
+
+              <Route path="/pricing" element={<Pricing />} />
 
         </Routes>
       </div>

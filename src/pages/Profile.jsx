@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getProfileStats } from '../services/profileService'
 
@@ -194,8 +195,24 @@ export default function Profile() {
             marginTop: '12px'
           }}
         >
-          Account Type: Standard Member
+          Account Type: Free Member
         </p>
+
+        <Link
+          to="/pricing"
+          style={{
+            display: 'inline-block',
+            marginTop: '18px',
+            background: '#D4AF37',
+            color: '#000',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            fontWeight: '900',
+            textDecoration: 'none'
+          }}
+        >
+          Upgrade to Premium
+        </Link>
       </div>
     </div>
   )
