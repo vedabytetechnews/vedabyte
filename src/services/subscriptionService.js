@@ -48,9 +48,14 @@ export async function activatePro(userId, paymentId) {
       razorpay_payment_id: paymentId
     })
     .eq('user_id', userId)
+    .select()
 
-  if (error) throw error
+  if (error) {
+    console.error('Activate Pro error:', error)
+    throw error
+  }
 
+  console.log('Pro activated:', data)
   return data
 }
 
