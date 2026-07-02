@@ -5,6 +5,8 @@ import news from '../data/news'
 import { useAuth } from '../context/AuthContext'
 import { saveBookmark } from '../services/bookmarkService'
 import { getEditedArticleMap } from '../services/articleAdminService'
+import PremiumArticleGate from '../components/PremiumArticleGate'
+import AISummary from '../components/AISummary'
 
 import {
   getLikeCount,
@@ -33,24 +35,26 @@ export default function Article() {
 
   const editedMap = getEditedArticleMap()
 
-const localArticle = news.find(item => item.id === id)
+  const localArticle = news.find(item => item.id === id)
 
-const mergedLocalArticle = localArticle
-  ? {
-      ...localArticle,
-      ...(editedMap[localArticle.id] || {})
-    }
-  : null
+  const mergedLocalArticle = localArticle
+    ? {
+        ...localArticle,
+        ...(editedMap[localArticle.id] || {})
+      }
+    : null
 
-const savedLiveArticle = localStorage.getItem(
-  `vedabyte_live_article_${id}`
-)
+  const savedLiveArticle = localStorage.getItem(
+    `vedabyte_live_article_${id}`
+  )
 
-const liveArticle = savedLiveArticle
-  ? JSON.parse(savedLiveArticle)
-  : null
+  
 
-const article = mergedLocalArticle || liveArticle
+  const liveArticle = savedLiveArticle
+    ? JSON.parse(savedLiveArticle)
+    : null
+
+  const article = mergedLocalArticle || liveArticle
 
   useEffect(() => {
     async function loadLikes() {
@@ -79,6 +83,42 @@ const article = mergedLocalArticle || liveArticle
     loadComments()
   }, [article])
 
+  useEffect(() => {
+  if (!article) return
+
+  localStorage.setItem(
+    'vedabyte_continue_reading',
+    JSON.stringify({
+      id: article.id,
+      title: article.title,
+      category: article.category
+    })
+  )
+}, [article])
+
+useEffect(() => {
+  if (!article) return
+
+  const saved = localStorage.getItem('vedabyte_reading_history')
+  const history = saved ? JSON.parse(saved) : []
+
+  const current = {
+    id: article.id,
+    title: article.title,
+    category: article.category
+  }
+
+  const updatedHistory = [
+    current,
+    ...history.filter(item => item.id !== article.id)
+  ].slice(0, 10)
+
+  localStorage.setItem(
+    'vedabyte_reading_history',
+    JSON.stringify(updatedHistory)
+  )
+}, [article])
+
   if (!article) {
     return (
       <div
@@ -105,16 +145,16 @@ const article = mergedLocalArticle || liveArticle
   }
 
   const relatedArticles = news
-  .map(item => ({
-    ...item,
-    ...(editedMap[item.id] || {})
-  }))
-  .filter(
-    item =>
-      item.id !== article.id &&
-      item.category === article.category
-  )
-  .slice(0, 3)
+    .map(item => ({
+      ...item,
+      ...(editedMap[item.id] || {})
+    }))
+    .filter(
+      item =>
+        item.id !== article.id &&
+        item.category === article.category
+    )
+    .slice(0, 3)
 
   async function handleSave() {
     if (!isAuthenticated) {
@@ -189,6 +229,117 @@ const article = mergedLocalArticle || liveArticle
     }
   }
 
+  const ArticlePreviewContent = (
+  <>
+    <div
+      style={{
+        marginTop: '45px',
+        fontSize: '18px',
+        lineHeight: '1.9',
+        color: '#D1D5DB',
+        background: '#111111',
+        border: '1px solid #232323',
+        borderRadius: '20px',
+        padding: '28px'
+      }}
+
+      
+    >
+      <p>{article.description}</p>
+<AISummary article={article} />
+      <br />
+
+      <p>
+        This development reflects how quickly the technology industry is
+        changing. Companies are investing heavily in artificial intelligence,
+        cloud platforms, cybersecurity, developer tools and connected devices
+        to remain competitive.
+      </p>
+    </div>
+  </>
+)
+
+
+
+const ArticleLockedContent = (
+  <>
+    <div
+      style={{
+        marginTop: '35px',
+        background: '#111111',
+        border: '1px solid #232323',
+        borderRadius: '20px',
+        padding: '28px'
+      }}
+    >
+      <h2 style={{ color: '#D4AF37', marginBottom: '18px' }}>
+        Key Points
+      </h2>
+
+      <ul
+        style={{
+          color: '#D1D5DB',
+          lineHeight: '2',
+          paddingLeft: '22px'
+        }}
+      >
+        <li>This story highlights an important shift in the technology sector.</li>
+        <li>The update may impact consumers, startups, developers, or enterprise users.</li>
+        <li>VedaByte will continue tracking related developments as the story evolves.</li>
+      </ul>
+    </div>
+
+    <div
+      style={{
+        marginTop: '30px',
+        background: '#111111',
+        border: '1px solid #232323',
+        borderRadius: '20px',
+        padding: '28px'
+      }}
+    >
+      <h2 style={{ color: '#D4AF37', marginBottom: '18px' }}>
+        Why It Matters
+      </h2>
+
+      <p
+        style={{
+          color: '#D1D5DB',
+          lineHeight: '1.9',
+          fontSize: '17px'
+        }}
+      >
+        Technology news often moves quickly, but the larger impact comes
+        from how these changes affect businesses, builders and everyday
+        users. This story is part of a wider shift toward smarter products,
+        faster platforms and more connected digital experiences.
+      </p>
+    </div>
+
+    {article.isLive && (
+      <div
+        style={{
+          marginTop: '30px',
+          background: '#0F172A',
+          border: '1px solid #232323',
+          borderRadius: '20px',
+          padding: '24px'
+        }}
+      >
+        <h3 style={{ color: '#D4AF37', marginBottom: '10px' }}>
+          Original Reporting
+        </h3>
+
+        <p style={{ color: '#D1D5DB', lineHeight: '1.7' }}>
+          This live article is sourced from{' '}
+          {article.source || 'an external publisher'}. VedaByte provides a
+          clean reading view, summary context and bookmark support.
+        </p>
+      </div>
+    )}
+  </>
+)
+
   return (
     <div
       style={{
@@ -236,6 +387,23 @@ const article = mergedLocalArticle || liveArticle
         >
           {article.category}
         </span>
+
+        {article.isPremium && (
+          <span
+            style={{
+              color: '#D4AF37',
+              border: '1px solid #D4AF37',
+              fontWeight: '800',
+              textTransform: 'uppercase',
+              padding: '7px 12px',
+              borderRadius: '999px',
+              fontSize: '12px',
+              marginLeft: '10px'
+            }}
+          >
+            PRO
+          </span>
+        )}
 
         <h1
           style={{
@@ -333,134 +501,15 @@ const article = mergedLocalArticle || liveArticle
           )}
         </div>
 
-        <div
-          style={{
-            marginTop: '45px',
-            fontSize: '18px',
-            lineHeight: '1.9',
-            color: '#D1D5DB',
-            background: '#111111',
-            border: '1px solid #232323',
-            borderRadius: '20px',
-            padding: '28px'
-          }}
-        >
-          <p>{article.description}</p>
+        {ArticlePreviewContent}
 
-          <br />
-
-          <p>
-            This development reflects how quickly the technology industry is
-            changing. Companies are investing heavily in artificial intelligence,
-            cloud platforms, cybersecurity, developer tools and connected
-            devices to remain competitive.
-          </p>
-
-          <br />
-
-          <p>
-            For readers, the key takeaway is clear: the next generation of
-            digital products will be faster, smarter and more deeply integrated
-            into everyday work. VedaByte will continue tracking these shifts
-            across startups, enterprise technology and consumer innovation.
-          </p>
-        </div>
-
-        <div
-          style={{
-            marginTop: '35px',
-            background: '#111111',
-            border: '1px solid #232323',
-            borderRadius: '20px',
-            padding: '28px'
-          }}
-        >
-          <h2
-            style={{
-              color: '#D4AF37',
-              marginBottom: '18px'
-            }}
-          >
-            Key Points
-          </h2>
-
-          <ul
-            style={{
-              color: '#D1D5DB',
-              lineHeight: '2',
-              paddingLeft: '22px'
-            }}
-          >
-            <li>This story highlights an important shift in the technology sector.</li>
-            <li>The update may impact consumers, startups, developers, or enterprise users.</li>
-            <li>VedaByte will continue tracking related developments as the story evolves.</li>
-          </ul>
-        </div>
-
-        <div
-          style={{
-            marginTop: '30px',
-            background: '#111111',
-            border: '1px solid #232323',
-            borderRadius: '20px',
-            padding: '28px'
-          }}
-        >
-          <h2
-            style={{
-              color: '#D4AF37',
-              marginBottom: '18px'
-            }}
-          >
-            Why It Matters
-          </h2>
-
-          <p
-            style={{
-              color: '#D1D5DB',
-              lineHeight: '1.9',
-              fontSize: '17px'
-            }}
-          >
-            Technology news often moves quickly, but the larger impact comes
-            from how these changes affect businesses, builders and everyday
-            users. This story is part of a wider shift toward smarter products,
-            faster platforms and more connected digital experiences.
-          </p>
-        </div>
-
-        {article.isLive && (
-          <div
-            style={{
-              marginTop: '30px',
-              background: '#0F172A',
-              border: '1px solid #232323',
-              borderRadius: '20px',
-              padding: '24px'
-            }}
-          >
-            <h3
-              style={{
-                color: '#D4AF37',
-                marginBottom: '10px'
-              }}
-            >
-              Original Reporting
-            </h3>
-
-            <p
-              style={{
-                color: '#D1D5DB',
-                lineHeight: '1.7'
-              }}
-            >
-              This live article is sourced from{' '}
-              {article.source || 'an external publisher'}. VedaByte provides a
-              clean reading view, summary context and bookmark support. For the
-              complete original report, use the source button above.
-            </p>
-          </div>
-        )}
+{article.isPremium ? (
+  <PremiumArticleGate>
+    {ArticleLockedContent}
+  </PremiumArticleGate>
+) : (
+  ArticleLockedContent
+)}
       </div>
 
       <section

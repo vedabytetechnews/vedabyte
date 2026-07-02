@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getProfileStats } from '../services/profileService'
+import useSubscription from '../hooks/useSubscription'
 
 export default function Profile() {
   const { user, isAuthenticated } = useAuth()
+  const { isPro } = useSubscription()
   const [stats, setStats] = useState(null)
 
   useEffect(() => {
@@ -44,52 +46,15 @@ export default function Profile() {
     stats.comments
 
   return (
-    <div
-      style={{
-        maxWidth: '1100px',
-        margin: '0 auto',
-        padding: '45px 20px',
-        color: '#fff'
-      }}
-    >
-      <div
-        style={{
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '24px',
-          padding: '35px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '25px',
-          flexWrap: 'wrap',
-          marginBottom: '35px'
-        }}
-      >
-        <div
-          style={{
-            width: '90px',
-            height: '90px',
-            borderRadius: '22px',
-            background: '#D4AF37',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            color: '#000',
-            fontSize: '36px',
-            fontWeight: '900'
-          }}
-        >
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '45px 20px', color: '#fff' }}>
+      <div style={profileBoxStyle}>
+        <div style={avatarStyle}>
           {avatar ? (
             <img
               src={avatar}
               alt={name}
               referrerPolicy="no-referrer"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
             name[0]
@@ -97,50 +62,30 @@ export default function Profile() {
         </div>
 
         <div>
-          <h1
-            style={{
-              color: '#D4AF37',
-              fontSize: '38px',
-              marginBottom: '8px'
-            }}
-          >
+          <h1 style={{ color: '#D4AF37', fontSize: '38px', marginBottom: '8px' }}>
             {name}
           </h1>
 
-          <p style={{ color: '#9CA3AF' }}>
-            {email}
-          </p>
+          <p style={{ color: '#9CA3AF' }}>{email}</p>
 
-          <p
-            style={{
-              color: '#6B7280',
-              marginTop: '8px'
-            }}
-          >
+          <p style={{ color: '#6B7280', marginTop: '8px' }}>
             Member Since:{' '}
             {user?.created_at
               ? new Date(user.created_at).toLocaleDateString()
               : 'Unknown'}
           </p>
+
+          <div style={isPro ? proBadgeStyle : freeBadgeStyle}>
+            {isPro ? '⭐ Pro Member' : 'Free Member'}
+          </div>
         </div>
       </div>
 
-      <h2
-        style={{
-          color: '#D4AF37',
-          marginBottom: '20px'
-        }}
-      >
+      <h2 style={{ color: '#D4AF37', marginBottom: '20px' }}>
         Your Activity
       </h2>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
-          gap: '24px'
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '24px' }}>
         <div style={cardStyle}>
           <p style={labelStyle}>Bookmarks</p>
           <h3 style={numberStyle}>{stats.bookmarks}</h3>
@@ -157,65 +102,57 @@ export default function Profile() {
         </div>
       </div>
 
-      <div
-        style={{
-          marginTop: '35px',
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '20px',
-          padding: '30px'
-        }}
-      >
-        <h3
-          style={{
-            color: '#D4AF37',
-            marginBottom: '20px'
-          }}
-        >
+      <div style={overviewStyle}>
+        <h3 style={{ color: '#D4AF37', marginBottom: '20px' }}>
           Account Overview
         </h3>
 
         <p style={{ color: '#D1D5DB' }}>
-          Total Engagement:{' '}
-          <strong>{totalEngagement}</strong>
+          Total Engagement: <strong>{totalEngagement}</strong>
         </p>
 
-        <p
-          style={{
-            color: '#9CA3AF',
-            marginTop: '12px'
-          }}
-        >
+        <p style={{ color: '#9CA3AF', marginTop: '12px' }}>
           User ID: {user.id.slice(0, 12)}...
         </p>
 
-        <p
-          style={{
-            color: '#9CA3AF',
-            marginTop: '12px'
-          }}
-        >
-          Account Type: Free Member
+        <p style={{ color: '#9CA3AF', marginTop: '12px' }}>
+          Account Type: {isPro ? 'Pro Member' : 'Free Member'}
         </p>
 
-        <Link
-          to="/pricing"
-          style={{
-            display: 'inline-block',
-            marginTop: '18px',
-            background: '#D4AF37',
-            color: '#000',
-            padding: '12px 18px',
-            borderRadius: '10px',
-            fontWeight: '900',
-            textDecoration: 'none'
-          }}
-        >
-          Upgrade to Premium
-        </Link>
+        {!isPro && (
+          <Link to="/pricing" style={upgradeStyle}>
+            Upgrade to Premium
+          </Link>
+        )}
       </div>
     </div>
   )
+}
+
+const profileBoxStyle = {
+  background: '#111111',
+  border: '1px solid #232323',
+  borderRadius: '24px',
+  padding: '35px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '25px',
+  flexWrap: 'wrap',
+  marginBottom: '35px'
+}
+
+const avatarStyle = {
+  width: '90px',
+  height: '90px',
+  borderRadius: '22px',
+  background: '#D4AF37',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  color: '#000',
+  fontSize: '36px',
+  fontWeight: '900'
 }
 
 const cardStyle = {
@@ -233,4 +170,43 @@ const labelStyle = {
 const numberStyle = {
   color: '#FFFFFF',
   fontSize: '42px'
+}
+
+const overviewStyle = {
+  marginTop: '35px',
+  background: '#111111',
+  border: '1px solid #232323',
+  borderRadius: '20px',
+  padding: '30px'
+}
+
+const upgradeStyle = {
+  display: 'inline-block',
+  marginTop: '18px',
+  background: '#D4AF37',
+  color: '#000',
+  padding: '12px 18px',
+  borderRadius: '10px',
+  fontWeight: '900',
+  textDecoration: 'none'
+}
+
+const proBadgeStyle = {
+  display: 'inline-block',
+  marginTop: '14px',
+  background: '#D4AF37',
+  color: '#000',
+  padding: '8px 12px',
+  borderRadius: '999px',
+  fontWeight: '900'
+}
+
+const freeBadgeStyle = {
+  display: 'inline-block',
+  marginTop: '14px',
+  background: '#232323',
+  color: '#D1D5DB',
+  padding: '8px 12px',
+  borderRadius: '999px',
+  fontWeight: '800'
 }

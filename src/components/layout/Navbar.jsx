@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getUserRole } from '../../services/roleService'
+import useSubscription from '../../hooks/useSubscription'
 
 export default function Navbar() {
+  const { isPro } = useSubscription()
   const { user, signIn, signOut, isAuthenticated } = useAuth()
 
   const [scrolled, setScrolled] = useState(false)
@@ -339,8 +341,8 @@ export default function Navbar() {
           <a className="vb-logo" href="/">
             <div className="vb-logo-icon">V</div>
             <span className="vb-logo-text">
-              <span>Veda</span>Byte
-            </span>
+  {isPro ? 'VedaByte ⭐ PRO' : 'VedaByte'}
+</span>
           </a>
 
           <div className="vb-links">
@@ -353,6 +355,13 @@ export default function Navbar() {
             <a className="vb-link" href="/category/startups">Startups</a>
             <a className="vb-link" href="/category/security">Security</a>
             <a className="vb-link" href="/search">Search</a>
+            <a className="vb-link" href="/search">Search</a>
+
+{isAuthenticated && (
+  <a className="vb-link" href="/premium">
+    Premium
+  </a>
+)}
 
             {isAuthenticated && (
               <a className="vb-link" href="/bookmarks">Saved</a>
@@ -362,6 +371,8 @@ export default function Navbar() {
               <a className="vb-link" href="/admin">Admin</a>
             )}
           </div>
+
+          
 
           <div className="vb-right">
             <button

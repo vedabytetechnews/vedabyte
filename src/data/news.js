@@ -4,6 +4,7 @@ const news = [
     category: 'AI',
     title: 'OpenAI Unveils Next Generation AI Model',
     description: 'New capabilities promise stronger reasoning, coding, and enterprise automation.',
+    isPremium: true,
     image: 'https://picsum.photos/600/400?random=1'
   },
   {

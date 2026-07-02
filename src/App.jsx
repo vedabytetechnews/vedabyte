@@ -19,6 +19,9 @@ import AdminArticles from './pages/AdminArticles'
 import AdminNewsletter from './pages/AdminNewsletter'
 import Pricing from './pages/Pricing'
 import AdminRoute from './components/AdminRoute'
+import PremiumRoute from './components/PremiumRoute'
+import Premium from './pages/Premium'
+import WeeklyBrief from './pages/WeeklyBrief'
 
 function App() {
   return (
@@ -102,6 +105,24 @@ function App() {
           />
 
               <Route path="/pricing" element={<Pricing />} />
+
+              <Route
+  path="/premium"
+  element={
+    <PremiumRoute>
+      <Premium />
+    </PremiumRoute>
+  }
+/>
+
+<Route
+  path="/premium/weekly-brief"
+  element={
+    <PremiumRoute>
+      <WeeklyBrief />
+    </PremiumRoute>
+  }
+/>
 
         </Routes>
       </div>
