@@ -336,140 +336,23 @@ export default function Navbar() {
     <>
       <style>{navStyle}</style>
 
-      <nav className={`vb-nav${scrolled ? ' scrolled' : ''}`}>
-        <div className="vb-nav-inner">
-          <a className="vb-logo" href="/">
-            <div className="vb-logo-icon">V</div>
-            <span className="vb-logo-text">
-  {isPro ? 'VedaByte ⭐ PRO' : 'VedaByte'}
-</span>
-          </a>
+      <nav className="flex items-center gap-6">
+  <Link to="/">Home</Link>
 
-          <div className="vb-links">
-            <div className="vb-live">
-              <span className="vb-live-dot"></span> LIVE
-            </div>
+  <Link to="/category/ai">AI</Link>
 
-            <a className="vb-link active" href="/">Home</a>
-            <a className="vb-link" href="/category/ai">AI</a>
-            <a className="vb-link" href="/category/startups">Startups</a>
-            <a className="vb-link" href="/category/security">Security</a>
-            <a className="vb-link" href="/search">Search</a>
-            
+  <Link to="/category/startups">Startups</Link>
 
-            {isAuthenticated && (
-  <>
+  <Link to="/category/security">Security</Link>
 
-{isAuthenticated && (
-  <a className="vb-link" href="/premium">
-    Premium
-  </a>
-)}
+  <Link to="/search">Search</Link>
 
-            {isAuthenticated && (
-              <a className="vb-link" href="/bookmarks">Saved</a>
-            )}
+  <Link to="/premium">Premium</Link>
 
-            {isAdmin && (
-              <a className="vb-link" href="/admin">Admin</a>
-            )}
-          </div>
-
-          
-
-          <div className="vb-right">
-            <button
-              className="vb-search-btn"
-              onClick={() => window.location.href = '/search'}
-            >
-              🔍
-            </button>
-
-            {isAuthenticated ? (
-              <div className="vb-user-wrap" ref={dropdownRef}>
-                <div
-                  className="vb-user"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                >
-                  <span className="vb-user-name">
-                    {user?.user_metadata?.full_name?.split(' ')[0] || 'User'}
-                  </span>
-
-                  <div className="vb-avatar">
-                    {user?.user_metadata?.avatar_url ? (
-                      <img
-                        src={user.user_metadata.avatar_url}
-                        alt="avatar"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      'U'
-                    )}
-                  </div>
-                </div>
-
-                <div className={`vb-dropdown${dropdownOpen ? ' open' : ''}`}>
-                  <button
-                    className="vb-dropdown-item"
-                    onClick={() => window.location.href = '/profile'}
-                  >
-                    Profile
-                  </button>
-
-                  <button
-                    className="vb-dropdown-item"
-                    onClick={() => window.location.href = '/settings'}
-                  >
-                    Settings
-                  </button>
-
-                  <button
-                    className="vb-dropdown-item"
-                    onClick={() => window.location.href = '/bookmarks'}
-                  >
-                    Saved Articles
-                  </button>
-
-                  {isAdmin && (
-                    <>
-                      <div className="vb-dropdown-divider"></div>
-
-                      <button
-                        className="vb-dropdown-item admin"
-                        onClick={() => window.location.href = '/admin'}
-                      >
-                        Admin Dashboard
-                      </button>
-                    </>
-                  )}
-
-                  <div className="vb-dropdown-divider"></div>
-
-                  <button
-                    className="vb-dropdown-item danger"
-                    onClick={signOut}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button className="vb-signin" onClick={signIn}>
-                Sign In
-              </button>
-            )}
-
-            <button
-              className="vb-hamburger"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-          </div>
-        </div>
-      </nav>
+  {isAdmin && (
+    <Link to="/admin">Admin</Link>
+  )}
+</nav>
 
       <div className={`vb-mobile-menu${mobileOpen ? ' open' : ''}`}>
         <a className="vb-mobile-link" href="/">Home</a>
