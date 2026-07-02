@@ -49,7 +49,6 @@ export default function Navbar() {
   const navStyle = `
     :root {
       --gold: #D4AF37;
-      --black: #0A0A0A;
       --surface: #111111;
       --surface2: #1A1A1A;
       --border: #232323;
@@ -76,6 +75,7 @@ export default function Navbar() {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 18px;
     }
 
     .vb-logo {
@@ -83,6 +83,7 @@ export default function Navbar() {
       align-items: center;
       gap: 10px;
       text-decoration: none;
+      flex-shrink: 0;
     }
 
     .vb-logo-icon {
@@ -102,10 +103,12 @@ export default function Navbar() {
       font-weight: 900;
       color: var(--text);
       letter-spacing: -1px;
+      line-height: 1;
     }
 
-    .vb-logo-text span {
+    .vb-logo-pro {
       color: var(--gold);
+      margin-left: 6px;
     }
 
     .vb-links {
@@ -121,6 +124,7 @@ export default function Navbar() {
       padding: 8px 12px;
       border-radius: 8px;
       transition: 0.2s;
+      white-space: nowrap;
     }
 
     .vb-link:hover,
@@ -149,6 +153,7 @@ export default function Navbar() {
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-shrink: 0;
     }
 
     .vb-search-btn,
@@ -239,6 +244,7 @@ export default function Navbar() {
 
     .vb-dropdown-item {
       width: 100%;
+      display: block;
       padding: 10px 12px;
       border: none;
       background: transparent;
@@ -247,6 +253,7 @@ export default function Navbar() {
       border-radius: 10px;
       cursor: pointer;
       font-size: 14px;
+      text-decoration: none;
     }
 
     .vb-dropdown-item:hover {
@@ -294,6 +301,7 @@ export default function Navbar() {
         justify-content: center;
         flex-direction: column;
         gap: 4px;
+        cursor: pointer;
       }
 
       .vb-hamburger span {
@@ -337,51 +345,140 @@ export default function Navbar() {
     <>
       <style>{navStyle}</style>
 
-      <nav className="flex items-center gap-6">
-  <Link to="/">Home</Link>
+      <nav className={`vb-nav${scrolled ? ' scrolled' : ''}`}>
+        <div className="vb-nav-inner">
+          <Link className="vb-logo" to="/">
+            <div className="vb-logo-icon">V</div>
 
-  <Link to="/category/ai">AI</Link>
+            <span className="vb-logo-text">
+              VedaByte
+              {isPro && <span className="vb-logo-pro">⭐ PRO</span>}
+            </span>
+          </Link>
 
-  <Link to="/category/startups">Startups</Link>
+          <div className="vb-links">
+            <div className="vb-live">
+              <span className="vb-live-dot"></span> LIVE
+            </div>
 
-  <Link to="/category/security">Security</Link>
+            <Link className="vb-link active" to="/">Home</Link>
+            <Link className="vb-link" to="/category/ai">AI</Link>
+            <Link className="vb-link" to="/category/startups">Startups</Link>
+            <Link className="vb-link" to="/category/security">Security</Link>
+            <Link className="vb-link" to="/search">Search</Link>
 
-  <Link to="/search">Search</Link>
+            {isAuthenticated && (
+              <Link className="vb-link" to="/premium">Premium</Link>
+            )}
 
-  <Link to="/premium">Premium</Link>
+            {isAdmin && (
+              <Link className="vb-link" to="/admin">Admin</Link>
+            )}
+          </div>
 
-  {isAdmin && (
-    <Link to="/admin">Admin</Link>
-  )}
-</nav>
+          <div className="vb-right">
+            <button
+              className="vb-search-btn"
+              onClick={() => window.location.href = '/search'}
+            >
+              🔍
+            </button>
+
+            {isAuthenticated ? (
+              <div className="vb-user-wrap" ref={dropdownRef}>
+                <button
+                  type="button"
+                  className="vb-user"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  <span className="vb-user-name">
+                    {user?.user_metadata?.full_name?.split(' ')[0] || 'User'}
+                  </span>
+
+                  <div className="vb-avatar">
+                    {user?.user_metadata?.avatar_url ? (
+                      <img
+                        src={user.user_metadata.avatar_url}
+                        alt="avatar"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      'U'
+                    )}
+                  </div>
+                </button>
+
+                <div className={`vb-dropdown${dropdownOpen ? ' open' : ''}`}>
+                  <Link className="vb-dropdown-item" to="/profile">
+                    Profile
+                  </Link>
+
+                  <Link className="vb-dropdown-item" to="/settings">
+                    Settings
+                  </Link>
+
+                  <Link className="vb-dropdown-item" to="/bookmarks">
+                    Saved Articles
+                  </Link>
+
+                  {isAdmin && (
+                    <>
+                      <div className="vb-dropdown-divider"></div>
+
+                      <Link className="vb-dropdown-item admin" to="/admin">
+                        Admin Dashboard
+                      </Link>
+                    </>
+                  )}
+
+                  <div className="vb-dropdown-divider"></div>
+
+                  <button
+                    className="vb-dropdown-item danger"
+                    onClick={signOut}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button className="vb-signin" onClick={signIn}>
+                Sign In
+              </button>
+            )}
+
+            <button
+              className="vb-hamburger"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       <div className={`vb-mobile-menu${mobileOpen ? ' open' : ''}`}>
-        <a className="vb-mobile-link" href="/">Home</a>
-        <a className="vb-mobile-link" href="/category/ai">AI</a>
-        <a className="vb-mobile-link" href="/category/startups">Startups</a>
-        <a className="vb-mobile-link" href="/category/security">Security</a>
-        <a className="vb-mobile-link" href="/search">Search</a>
+        <Link className="vb-mobile-link" to="/">Home</Link>
+        <Link className="vb-mobile-link" to="/category/ai">AI</Link>
+        <Link className="vb-mobile-link" to="/category/startups">Startups</Link>
+        <Link className="vb-mobile-link" to="/category/security">Security</Link>
+        <Link className="vb-mobile-link" to="/search">Search</Link>
 
         {isAuthenticated && (
           <>
-            <a className="vb-mobile-link" href="/bookmarks">
-              Saved Articles
-            </a>
-
-            <a className="vb-mobile-link" href="/profile">
-              Profile
-            </a>
-
-            <a className="vb-mobile-link" href="/settings">
-              Settings
-            </a>
+            <Link className="vb-mobile-link" to="/premium">Premium</Link>
+            <Link className="vb-mobile-link" to="/bookmarks">Saved Articles</Link>
+            <Link className="vb-mobile-link" to="/profile">Profile</Link>
+            <Link className="vb-mobile-link" to="/settings">Settings</Link>
           </>
         )}
 
         {isAdmin && (
-          <a className="vb-mobile-link admin" href="/admin">
+          <Link className="vb-mobile-link admin" to="/admin">
             Admin Dashboard
-          </a>
+          </Link>
         )}
 
         {!isAuthenticated ? (
