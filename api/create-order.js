@@ -5,16 +5,33 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET
 })
 
+const PLAN_PRICES = {
+  coffee: 14900,
+  pro: 9900
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
   try {
+    const { plan } = req.body
+
+    if (!PLAN_PRICES[plan]) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid plan selected'
+      })
+    }
+
     const order = await razorpay.orders.create({
-      amount: 19900,
+      amount: PLAN_PRICES[plan],
       currency: 'INR',
-      receipt: `vedabyte_pro_${Date.now()}`
+      receipt: `vedabyte_${plan}_${Date.now()}`,
+      notes: {
+        plan
+      }
     })
 
     return res.status(200).json({

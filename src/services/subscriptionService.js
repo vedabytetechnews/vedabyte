@@ -39,6 +39,40 @@ export async function createFreeSubscription(user) {
   return data
 }
 
+export async function activatePaidPlan(user, plan, paymentId) {
+  const expiresAt = new Date()
+
+  if (plan === 'coffee') {
+    expiresAt.setMonth(expiresAt.getMonth() + 3)
+  }
+
+  if (plan === 'pro') {
+    expiresAt.setMonth(expiresAt.getMonth() + 1)
+  }
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .insert([
+      {
+        user_id: user.id,
+        email: user.email,
+        plan,
+        status: 'active',
+        razorpay_payment_id: paymentId,
+        expires_at: expiresAt.toISOString()
+      }
+    ])
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Activate paid plan error:', error)
+    throw error
+  }
+
+  return data
+}
+
 export async function activatePro(userId, paymentId) {
   const { data, error } = await supabase
     .from('subscriptions')
@@ -55,7 +89,5 @@ export async function activatePro(userId, paymentId) {
     throw error
   }
 
-  console.log('Pro activated:', data)
   return data
 }
-

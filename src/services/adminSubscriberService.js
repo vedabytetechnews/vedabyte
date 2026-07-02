@@ -4,26 +4,32 @@ export async function getAllSubscribers() {
   const { data, error } = await supabase
     .from('newsletter_subscribers')
     .select('*')
-    .order('subscribed_at', { ascending: false })
-
-  console.log('SUBSCRIBERS DATA:', data)
-  console.log('SUBSCRIBERS ERROR:', error)
+    .order('created_at', { ascending: false })
 
   if (error) {
+    console.error(error)
     return []
   }
 
   return data || []
 }
 
-export async function deleteSubscriber(subscriberId) {
+export async function getSubscribers() {
+  return getAllSubscribers()
+}
+
+export async function getNewsletterSubscribers() {
+  return getAllSubscribers()
+}
+
+export async function deleteSubscriber(id) {
   const { error } = await supabase
     .from('newsletter_subscribers')
     .delete()
-    .eq('id', subscriberId)
+    .eq('id', id)
 
   if (error) {
-    console.error('DELETE SUBSCRIBER ERROR:', error)
+    console.error(error)
     return false
   }
 
