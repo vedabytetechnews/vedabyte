@@ -359,25 +359,12 @@ export default function Navbar() {
 
             {isAuthenticated && (
   <>
-    <a className="vb-mobile-link" href="/premium">
-      Premium
-    </a>
 
-    <a className="vb-mobile-link" href="/bookmarks">
-      Saved Articles
-    </a>
-
-    <a className="vb-mobile-link" href="/profile">
-      Profile
-    </a>
-
-    <a className="vb-mobile-link" href="/settings">
-      Settings
-    </a>
-  </>
+{isAuthenticated && (
+  <a className="vb-link" href="/premium">
+    Premium
+  </a>
 )}
-
-
 
             {isAuthenticated && (
               <a className="vb-link" href="/bookmarks">Saved</a>
