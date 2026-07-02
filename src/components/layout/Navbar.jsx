@@ -377,11 +377,7 @@ export default function Navbar() {
   </>
 )}
 
-{isAuthenticated && (
-  <a className="vb-link" href="/premium">
-    Premium
-  </a>
-)}
+
 
             {isAuthenticated && (
               <a className="vb-link" href="/bookmarks">Saved</a>
