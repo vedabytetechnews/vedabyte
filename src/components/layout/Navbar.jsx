@@ -355,7 +355,27 @@ export default function Navbar() {
             <a className="vb-link" href="/category/startups">Startups</a>
             <a className="vb-link" href="/category/security">Security</a>
             <a className="vb-link" href="/search">Search</a>
-            <a className="vb-link" href="/search">Search</a>
+            
+
+            {isAuthenticated && (
+  <>
+    <a className="vb-mobile-link" href="/premium">
+      Premium
+    </a>
+
+    <a className="vb-mobile-link" href="/bookmarks">
+      Saved Articles
+    </a>
+
+    <a className="vb-mobile-link" href="/profile">
+      Profile
+    </a>
+
+    <a className="vb-mobile-link" href="/settings">
+      Settings
+    </a>
+  </>
+)}
 
 {isAuthenticated && (
   <a className="vb-link" href="/premium">
