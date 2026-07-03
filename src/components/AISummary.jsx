@@ -41,6 +41,18 @@ export default function AISummary({ article }) {
     }
   }
 
+  async function copySummary() {
+  if (!summary) return
+
+  try {
+    await navigator.clipboard.writeText(summary)
+    alert('Summary copied!')
+  } catch (error) {
+    console.error(error)
+    alert('Unable to copy summary.')
+  }
+}
+
   if (loading) {
     return (
       <PremiumCard glow style={{ marginTop: '35px' }}>
@@ -72,7 +84,7 @@ export default function AISummary({ article }) {
     <PremiumCard glow style={{ marginTop: '35px' }}>
       <div style={topRowStyle}>
         <div>
-          <p style={labelStyle}>VEDABYTE AI</p>
+          <p style={labelStyle}>VEDABYTE INTELLIGENCE</p>
           <h2 style={titleStyle}>30 Second Summary</h2>
         </div>
 
@@ -84,7 +96,7 @@ export default function AISummary({ article }) {
       {!summary ? (
         <>
           <p style={textStyle}>
-            Generate a smart AI summary for this article using Gemini.
+            Generate a concise intelligence summary for this article.
           </p>
 
           <button
@@ -107,7 +119,7 @@ export default function AISummary({ article }) {
 
       {error && <p style={errorStyle}>{error}</p>}
 
-      <p style={footerStyle}>Powered by Gemini AI</p>
+      <p style={footerStyle}>Generated for VedaByte Pro members</p>
     </PremiumCard>
   )
 }
