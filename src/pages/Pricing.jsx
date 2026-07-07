@@ -31,7 +31,7 @@ export default function Pricing() {
   }, [user])
 
   async function handleUpgrade(planKey) {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       alert('Please sign in before upgrading.')
       return
     }
@@ -61,25 +61,36 @@ export default function Pricing() {
           color: '#D4AF37'
         },
         handler: async function (response) {
-  const updated = await verifyPayment({
-    user: {
-      id: user.id,
-      email: user.email
-    },
-    plan: planKey,
-    razorpay_order_id: response.razorpay_order_id,
-    razorpay_payment_id: response.razorpay_payment_id,
-    razorpay_signature: response.razorpay_signature
-  })
+          try {
+            const updated = await verifyPayment({
+              user: {
+                id: user.id,
+                email: user.email
+              },
+              plan: planKey,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
 
-  setSubscription(updated)
+            setSubscription(updated)
 
-  alert(
-    planKey === 'coffee'
-      ? 'Thank you for supporting VedaByte! 3 months Premium activated.'
-      : 'Premium subscription activated!'
-  )
-}
+            alert(
+              planKey === 'coffee'
+                ? 'Thank you for supporting VedaByte! 3 months Premium activated.'
+                : 'Premium subscription activated!'
+            )
+          } catch (error) {
+            console.error(error)
+            alert('Payment completed, but verification failed. Please contact support.')
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoadingPlan(null)
+          }
+        }
+      }
 
       const razorpay = new window.Razorpay(options)
       razorpay.open()
@@ -106,10 +117,9 @@ export default function Pricing() {
         'Search articles',
         'Save bookmarks',
         'Comments',
-        'Limited AI summaries'
+        'Limited intelligence summaries'
       ],
-      highlighted: false,
-      button: 'Current Plan'
+      highlighted: false
     },
     {
       name: 'Support VedaByte ☕',
@@ -120,7 +130,7 @@ export default function Pricing() {
       features: [
         'Everything in Free',
         '3 months Premium included',
-        'Unlimited AI summaries',
+        'Unlimited intelligence summaries',
         'Weekly Intelligence Brief',
         'Premium article access',
         'Supporter badge coming soon'
@@ -136,9 +146,9 @@ export default function Pricing() {
       description: 'For serious readers, builders, founders and tech teams.',
       features: [
         'Everything in Free',
-        'Unlimited AI summaries',
+        'Unlimited intelligence summaries',
         'Premium articles',
-        'Exclusive AI reports',
+        'Exclusive reports',
         'Daily email digest',
         'Priority support'
       ],
@@ -155,8 +165,8 @@ export default function Pricing() {
         <h1 style={titleStyle}>Choose Your VedaByte Plan</h1>
 
         <p style={subtitleStyle}>
-          Read smarter technology news with AI summaries, premium analysis,
-          weekly intelligence and exclusive reports.
+          Read smarter technology news with intelligence summaries, premium
+          analysis, weekly briefs and exclusive reports.
         </p>
 
         {isAuthenticated && (
@@ -187,11 +197,7 @@ export default function Pricing() {
                   : 'none'
               }}
             >
-              {plan.badge && (
-                <div style={badgeStyle}>
-                  {plan.badge}
-                </div>
-              )}
+              {plan.badge && <div style={badgeStyle}>{plan.badge}</div>}
 
               <h2 style={planNameStyle}>{plan.name}</h2>
 
@@ -219,7 +225,8 @@ export default function Pricing() {
                       ? 'linear-gradient(135deg, #D4AF37, #FFE08A)'
                       : '#D4AF37',
                   color: isCurrent ? '#9CA3AF' : '#000',
-                  cursor: isCurrent || isLoading ? 'default' : 'pointer'
+                  cursor: isCurrent || isLoading ? 'default' : 'pointer',
+                  opacity: isLoading ? 0.75 : 1
                 }}
               >
                 {isLoading
