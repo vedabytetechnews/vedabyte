@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import useSubscription from '../hooks/useSubscription'
 import PremiumCard from './PremiumCard'
 
 export default function AISummary({ article }) {
+  const { user } = useAuth()
   const { loading, isPro } = useSubscription()
 
   const [summary, setSummary] = useState('')
@@ -22,7 +24,8 @@ export default function AISummary({ article }) {
         },
         body: JSON.stringify({
           title: article?.title,
-          description: article?.description
+          description: article?.description,
+          userId: user?.id
         })
       })
 
@@ -103,16 +106,26 @@ export default function AISummary({ article }) {
             Generate a concise intelligence summary for this article.
           </p>
 
-          <button
-            onClick={generateSummary}
-            disabled={generating}
-            style={{
-              ...buttonStyle,
-              opacity: generating ? 0.7 : 1
-            }}
-          >
-            {generating ? 'Generating...' : 'Generate Summary'}
-          </button>
+          {generating && (
+  <div style={loadingBoxStyle}>
+    <p style={loadingTextStyle}>Reading article context...</p>
+    <div style={loadingBarStyle}>
+      <div style={loadingFillStyle}></div>
+    </div>
+    <p style={loadingSmallStyle}>Building VedaByte intelligence summary...</p>
+  </div>
+)}
+
+<button
+  onClick={generateSummary}
+  disabled={generating}
+  style={{
+    ...buttonStyle,
+    opacity: generating ? 0.7 : 1
+  }}
+>
+  {generating ? 'Analyzing article...' : 'Generate Summary'}
+</button>
         </>
       ) : (
         <div style={summaryStyle}>
@@ -247,4 +260,39 @@ const footerStyle = {
 const errorStyle = {
   color: '#ef4444',
   marginTop: '14px'
+}
+
+const loadingBoxStyle = {
+  background: '#0B0B0B',
+  border: '1px solid rgba(212,175,55,0.22)',
+  borderRadius: '18px',
+  padding: '18px',
+  marginBottom: '20px'
+}
+
+const loadingTextStyle = {
+  color: '#D4AF37',
+  fontWeight: '800',
+  marginBottom: '10px'
+}
+
+const loadingBarStyle = {
+  height: '8px',
+  background: '#050505',
+  borderRadius: '999px',
+  overflow: 'hidden',
+  marginBottom: '10px'
+}
+
+const loadingFillStyle = {
+  width: '70%',
+  height: '100%',
+  background: 'linear-gradient(90deg, #D4AF37, #FFE08A)',
+  borderRadius: '999px'
+}
+
+const loadingSmallStyle = {
+  color: '#9CA3AF',
+  fontSize: '13px',
+  margin: 0
 }

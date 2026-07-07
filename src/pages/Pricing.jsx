@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { createOrder } from '../services/paymentService'
+import { createOrder, verifyPayment } from '../services/paymentService'
 
 import {
   getUserSubscription,
-  createFreeSubscription,
-  activatePaidPlan
+  createFreeSubscription
 } from '../services/subscriptionService'
 
 export default function Pricing() {
@@ -62,21 +61,25 @@ export default function Pricing() {
           color: '#D4AF37'
         },
         handler: async function (response) {
-          const updated = await activatePaidPlan(
-            user,
-            planKey,
-            response.razorpay_payment_id
-          )
+  const updated = await verifyPayment({
+    user: {
+      id: user.id,
+      email: user.email
+    },
+    plan: planKey,
+    razorpay_order_id: response.razorpay_order_id,
+    razorpay_payment_id: response.razorpay_payment_id,
+    razorpay_signature: response.razorpay_signature
+  })
 
-          setSubscription(updated)
+  setSubscription(updated)
 
-          alert(
-            planKey === 'coffee'
-              ? 'Thank you for supporting VedaByte! 3 months Premium activated.'
-              : 'Premium subscription activated!'
-          )
-        }
-      }
+  alert(
+    planKey === 'coffee'
+      ? 'Thank you for supporting VedaByte! 3 months Premium activated.'
+      : 'Premium subscription activated!'
+  )
+}
 
       const razorpay = new window.Razorpay(options)
       razorpay.open()

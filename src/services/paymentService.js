@@ -15,3 +15,21 @@ export async function createOrder(plan) {
 
   return data.order
 }
+
+export async function verifyPayment(payload) {
+  const response = await fetch('/api/verify-payment', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Payment verification failed')
+  }
+
+  return data.subscription
+}

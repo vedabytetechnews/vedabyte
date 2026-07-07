@@ -1,8 +1,22 @@
 import { GoogleGenAI } from '@google/genai'
+import { createClient } from '@supabase/supabase-js'
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 })
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+)
+
+function createArticleId(title, description) {
+  return `${title || ''}-${description || ''}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 180)
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,7 +24,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { title, description } = req.body || {}
+    const { title, description, userId } = req.body || {}
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'User login required.'
+      })
+    }
 
     if (!title && !description) {
       return res.status(400).json({
@@ -20,7 +40,44 @@ export default async function handler(req, res) {
 
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
-        error: 'AI service is not configured.'
+        error: 'Summary service is not configured.'
+      })
+    }
+
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .in('plan', ['pro', 'coffee'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!subscription) {
+      return res.status(403).json({
+        error: 'Premium membership required.'
+      })
+    }
+
+    if (subscription.expires_at && new Date(subscription.expires_at) < new Date()) {
+      return res.status(403).json({
+        error: 'Premium membership expired.'
+      })
+    }
+
+    const articleId = createArticleId(title, description)
+
+    const { data: cachedSummary } = await supabase
+      .from('article_summaries')
+      .select('summary')
+      .eq('article_id', articleId)
+      .maybeSingle()
+
+    if (cachedSummary?.summary) {
+      return res.status(200).json({
+        summary: cachedSummary.summary,
+        cached: true
       })
     }
 
@@ -59,8 +116,18 @@ Rules:
       })
     }
 
+    await supabase
+      .from('article_summaries')
+      .insert([
+        {
+          article_id: articleId,
+          summary
+        }
+      ])
+
     return res.status(200).json({
-      summary
+      summary,
+      cached: false
     })
   } catch (error) {
     console.error('VEDABYTE SUMMARY ERROR:', error)
