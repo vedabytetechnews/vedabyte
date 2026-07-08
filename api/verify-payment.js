@@ -6,6 +6,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
+const PLAN_AMOUNT = {
+  coffee: 14900,
+  pro: 9900
+}
+
 function getExpiryDate(plan) {
   const date = new Date()
 
@@ -33,7 +38,7 @@ export default async function handler(req, res) {
     } = req.body
 
     if (!user?.id || !user?.email || !plan) {
-      return res.status(400).json({ message: 'Missing user or plan data' })
+      return res.status(400).json({ message: 'Missing required data' })
     }
 
     const body = `${razorpay_order_id}|${razorpay_payment_id}`
@@ -44,14 +49,24 @@ export default async function handler(req, res) {
       .digest('hex')
 
     if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({
-        message: 'Payment verification failed'
-      })
+      return res.status(400).json({ message: 'Invalid payment signature' })
     }
 
     const expiresAt = getExpiryDate(plan)
 
-    const { data, error } = await supabase
+    await supabase.from('payments').insert([
+      {
+        user_id: user.id,
+        email: user.email,
+        plan,
+        amount: PLAN_AMOUNT[plan],
+        razorpay_order_id,
+        razorpay_payment_id,
+        status: 'success'
+      }
+    ])
+
+    const { data: subscription, error } = await supabase
       .from('subscriptions')
       .insert([
         {
@@ -68,19 +83,15 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error(error)
-      return res.status(500).json({
-        message: 'Subscription activation failed'
-      })
+      return res.status(500).json({ message: 'Subscription activation failed' })
     }
 
     return res.status(200).json({
       success: true,
-      subscription: data
+      subscription
     })
   } catch (error) {
     console.error(error)
-    return res.status(500).json({
-      message: 'Payment verification failed'
-    })
+    return res.status(500).json({ message: 'Payment verification failed' })
   }
 }
