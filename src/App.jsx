@@ -23,6 +23,8 @@ import AdminNewsletter from './pages/AdminNewsletter'
 
 import AdminRoute from './components/AdminRoute'
 import PremiumRoute from './components/PremiumRoute'
+import Membership from './pages/Membership'
+import PaymentHistory from './pages/PaymentHistory'
 
 function App() {
   return (
@@ -49,6 +51,8 @@ function App() {
           <Route path="/admin/subscribers" element={<AdminRoute><AdminSubscribers /></AdminRoute>} />
           <Route path="/admin/articles" element={<AdminRoute><AdminArticles /></AdminRoute>} />
           <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletter /></AdminRoute>} />
+          <Route path="/membership" element={<Membership />} />
+          <Route path="/payments" element={<PaymentHistory />} />
         </Routes>
       </div>
 

@@ -30,7 +30,11 @@ export default function useSubscription() {
       const currentStatus = data?.status || 'inactive'
 
       setPlan(currentPlan)
-      setIsPro(currentPlan === 'pro' && currentStatus === 'active')
+      const hasPaidAccess =
+  (currentPlan === 'pro' || currentPlan === 'coffee') &&
+  currentStatus === 'active'
+
+setIsPro(hasPaidAccess)
     } catch (error) {
       console.error('Error fetching subscription:', error)
       setSubscription(null)

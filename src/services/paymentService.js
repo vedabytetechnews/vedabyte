@@ -1,10 +1,13 @@
-export async function createOrder(plan) {
+export async function createOrder(plan, user) {
   const response = await fetch('/api/create-order', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ plan })
+    body: JSON.stringify({
+      plan,
+      user
+    })
   })
 
   const data = await response.json()

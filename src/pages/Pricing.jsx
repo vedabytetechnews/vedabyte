@@ -41,7 +41,10 @@ export default function Pricing() {
     try {
       setLoadingPlan(planKey)
 
-      const order = await createOrder(planKey)
+      const order = await createOrder(planKey, {
+  id: user.id,
+  email: user.email
+})
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,

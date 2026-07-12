@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase'
 
 export async function getUserSubscription(userId) {
+  if (!userId) return null
+
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
@@ -10,11 +12,52 @@ export async function getUserSubscription(userId) {
     .maybeSingle()
 
   if (error) {
-    console.error(error)
+    console.error('Get subscription error:', error)
     return null
   }
 
-  return data
+  if (!data) return null
+
+  const isPaidPlan = data.plan === 'pro' || data.plan === 'coffee'
+
+  const expiryTime = data.expires_at
+    ? new Date(data.expires_at).getTime()
+    : null
+
+  const isExpired =
+    isPaidPlan &&
+    expiryTime !== null &&
+    expiryTime <= Date.now()
+
+  if (!isExpired) {
+    return data
+  }
+
+  // Immediately treat the user as expired in the UI.
+  // This works even if the database update is blocked by RLS.
+  const expiredSubscription = {
+    ...data,
+    plan: 'free',
+    status: 'expired',
+    previous_plan: data.plan,
+  }
+
+  const { error: updateError } = await supabase
+    .from('subscriptions')
+    .update({
+      plan: 'free',
+      status: 'expired',
+    })
+    .eq('id', data.id)
+
+  if (updateError) {
+    console.warn(
+      'Subscription expired, but database update was blocked:',
+      updateError
+    )
+  }
+
+  return expiredSubscription
 }
 
 export async function createFreeSubscription(user) {
@@ -74,15 +117,22 @@ export async function activatePaidPlan(user, plan, paymentId) {
 }
 
 export async function activatePro(userId, paymentId) {
+  const expiresAt = new Date()
+  expiresAt.setMonth(expiresAt.getMonth() + 1)
+
   const { data, error } = await supabase
     .from('subscriptions')
-    .update({
-      plan: 'pro',
-      status: 'active',
-      razorpay_payment_id: paymentId
-    })
-    .eq('user_id', userId)
+    .insert([
+      {
+        user_id: userId,
+        plan: 'pro',
+        status: 'active',
+        razorpay_payment_id: paymentId,
+        expires_at: expiresAt.toISOString()
+      }
+    ])
     .select()
+    .single()
 
   if (error) {
     console.error('Activate Pro error:', error)

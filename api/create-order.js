@@ -12,11 +12,14 @@ const PLAN_PRICES = {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' })
+    return res.status(405).json({
+      success: false,
+      message: 'Method not allowed'
+    })
   }
 
   try {
-    const { plan } = req.body
+    const { plan, user } = req.body
 
     if (!PLAN_PRICES[plan]) {
       return res.status(400).json({
@@ -25,12 +28,21 @@ export default async function handler(req, res) {
       })
     }
 
+    if (!user?.id || !user?.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Signed-in user information is required'
+      })
+    }
+
     const order = await razorpay.orders.create({
       amount: PLAN_PRICES[plan],
       currency: 'INR',
       receipt: `vedabyte_${plan}_${Date.now()}`,
       notes: {
-        plan
+        plan,
+        user_id: user.id,
+        email: user.email
       }
     })
 
@@ -39,7 +51,7 @@ export default async function handler(req, res) {
       order
     })
   } catch (error) {
-    console.error(error)
+    console.error('Create order error:', error)
 
     return res.status(500).json({
       success: false,

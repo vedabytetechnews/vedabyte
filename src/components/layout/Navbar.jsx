@@ -417,6 +417,10 @@ export default function Navbar() {
                     Settings
                   </Link>
 
+                  <Link className="vb-dropdown-item" to="/membership">
+                    My Membership
+                  </Link>
+
                   <Link className="vb-dropdown-item" to="/bookmarks">
                     Saved Articles
                   </Link>
@@ -472,6 +476,7 @@ export default function Navbar() {
             <Link className="vb-mobile-link" to="/bookmarks">Saved Articles</Link>
             <Link className="vb-mobile-link" to="/profile">Profile</Link>
             <Link className="vb-mobile-link" to="/settings">Settings</Link>
+            
           </>
         )}
 
