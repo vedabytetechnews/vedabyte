@@ -3,7 +3,13 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 )
 
 const PLAN_AMOUNT = {
@@ -106,11 +112,19 @@ export default async function handler(req, res) {
     }
 
     if (existingPayment) {
-      return res.status(409).json({
-        success: false,
-        message: 'This payment has already been processed'
-      })
-    }
+  const { data: existingSubscription } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('razorpay_payment_id', razorpay_payment_id)
+    .maybeSingle()
+
+  return res.status(200).json({
+    success: true,
+    alreadyProcessed: true,
+    payment: existingPayment,
+    subscription: existingSubscription
+  })
+}
 
     const { data: payment, error: paymentError } =
       await supabase

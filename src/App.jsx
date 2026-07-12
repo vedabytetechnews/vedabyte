@@ -25,6 +25,10 @@ import AdminRoute from './components/AdminRoute'
 import PremiumRoute from './components/PremiumRoute'
 import Membership from './pages/Membership'
 import PaymentHistory from './pages/PaymentHistory'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import Terms from './pages/Terms'
+import RefundPolicy from './pages/RefundPolicy'
+import Contact from './pages/Contact'
 
 function App() {
   return (
@@ -53,6 +57,10 @@ function App() {
           <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletter /></AdminRoute>} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/payments" element={<PaymentHistory />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/contact" element={<Contact />} />
         </Routes>
       </div>
 
