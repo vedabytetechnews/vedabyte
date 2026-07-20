@@ -7,6 +7,8 @@ import {
   getTopCommentedArticles,
   getTopSavedArticles
 } from '../services/analyticsService'
+import LoadingScreen from '../components/LoadingScreen'
+import SEO from '../components/SEO'
 
 export default function Admin() {
   const [stats, setStats] = useState(null)
@@ -15,237 +17,276 @@ export default function Admin() {
     commented: [],
     saved: []
   })
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    let isMounted = true
+
     async function loadDashboard() {
-      const statsData = await getAdminStats()
+      try {
+        const statsData = await getAdminStats()
 
-      const [liked, commented, saved] = await Promise.all([
-        getTopLikedArticles(),
-        getTopCommentedArticles(),
-        getTopSavedArticles()
-      ])
+        const [liked, commented, saved] = await Promise.all([
+          getTopLikedArticles(),
+          getTopCommentedArticles(),
+          getTopSavedArticles()
+        ])
 
-      setStats(statsData)
-      setAnalytics({ liked, commented, saved })
+        if (isMounted) {
+          setStats(statsData)
+          setAnalytics({
+            liked: Array.isArray(liked) ? liked : [],
+            commented: Array.isArray(commented) ? commented : [],
+            saved: Array.isArray(saved) ? saved : []
+          })
+        }
+      } catch (loadError) {
+        console.error('Admin dashboard loading failed:', loadError)
+
+        if (isMounted) {
+          setError('Unable to load the admin dashboard right now.')
+        }
+      }
     }
 
     loadDashboard()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
-  if (!stats) {
-    return (
-      <div style={{ color: '#fff', padding: '50px 20px' }}>
-        Loading admin dashboard...
-      </div>
-    )
+  if (!stats && !error) {
+    return <LoadingScreen message="Loading admin dashboard..." />
+  }
+
+  const safeStats = {
+    bookmarks: Number(stats?.bookmarks || 0),
+    likes: Number(stats?.likes || 0),
+    comments: Number(stats?.comments || 0),
+    subscribers: Number(stats?.subscribers || 0)
   }
 
   const cards = [
-    { label: 'Bookmarks', value: stats.bookmarks, link: '/bookmarks' },
-    { label: 'Likes', value: stats.likes, link: '/admin' },
-    { label: 'Comments', value: stats.comments, link: '/admin/comments' },
-    { label: 'Subscribers', value: stats.subscribers, link: '/admin/subscribers' }
+    {
+      label: 'Bookmarks',
+      value: safeStats.bookmarks,
+      link: '/bookmarks'
+    },
+    {
+      label: 'Likes',
+      value: safeStats.likes,
+      link: '/admin'
+    },
+    {
+      label: 'Comments',
+      value: safeStats.comments,
+      link: '/admin/comments'
+    },
+    {
+      label: 'Subscribers',
+      value: safeStats.subscribers,
+      link: '/admin/subscribers'
+    }
+  ]
+
+  const actions = [
+    {
+      title: 'Manage Articles',
+      text: 'Feature, edit and delete articles.',
+      link: '/admin/articles'
+    },
+    {
+      title: 'Send Newsletter',
+      text: 'Create Brevo email campaigns.',
+      link: '/admin/newsletter'
+    },
+    {
+      title: 'Subscribers',
+      text: 'Search, export and manage emails.',
+      link: '/admin/subscribers'
+    },
+    {
+      title: 'Comments',
+      text: 'Moderate reader comments.',
+      link: '/admin/comments'
+    },
+    {
+      title: 'Users',
+      text: 'View registered users.',
+      link: '/admin/users'
+    }
   ]
 
   const totalEngagement =
-    Number(stats.bookmarks || 0) +
-    Number(stats.likes || 0) +
-    Number(stats.comments || 0)
+    safeStats.bookmarks +
+    safeStats.likes +
+    safeStats.comments
 
   return (
-    <div style={pageStyle}>
-      <h1 style={titleStyle}>
-        VedaByte Admin Dashboard
-      </h1>
+    <>
+      <SEO
+        title="VedaByte Admin Dashboard"
+        description="Manage VedaByte articles, users, subscribers, comments and platform analytics."
+        url="https://vedabyte-delta.vercel.app/admin"
+      />
 
-      <p style={subtitleStyle}>
-        Overview of platform activity, engagement, subscribers and publishing tools.
-      </p>
+      <main className="admin-page">
+        <header className="admin-header">
+          <p className="admin-label">VEDABYTE ADMIN</p>
 
-      <div style={adminGridStyle}>
-        <AdminAction title="Manage Articles" text="Feature, edit and delete articles." link="/admin/articles" />
-        <AdminAction title="Send Newsletter" text="Create Brevo email campaigns." link="/admin/newsletter" />
-        <AdminAction title="Subscribers" text="Search, export and manage emails." link="/admin/subscribers" />
-        <AdminAction title="Comments" text="Moderate reader comments." link="/admin/comments" />
-        <AdminAction title="Users" text="View registered users." link="/admin/users" />
-      </div>
+          <h1 className="admin-title">
+            VedaByte Admin Dashboard
+          </h1>
 
-      <h2 style={sectionTitleStyle}>Platform Metrics</h2>
+          <p className="admin-subtitle">
+            Overview of platform activity, engagement, subscribers and
+            publishing tools.
+          </p>
+        </header>
 
-      <div style={statsGridStyle}>
-        {cards.map(card => (
-          <Link key={card.label} to={card.link} style={{ textDecoration: 'none' }}>
-            <div style={cardStyle}>
-              <p style={{ color: '#9CA3AF', marginBottom: '12px' }}>
-                {card.label}
-              </p>
+        {error ? (
+          <section className="admin-error-card">
+            <h2>Dashboard unavailable</h2>
+            <p>{error}</p>
+          </section>
+        ) : (
+          <>
+            <section
+              className="admin-actions-grid"
+              aria-label="Admin tools"
+            >
+              {actions.map(action => (
+                <AdminAction
+                  key={action.title}
+                  {...action}
+                />
+              ))}
+            </section>
 
-              <h2 style={{ color: '#D4AF37', fontSize: '42px' }}>
-                {card.value}
+            <section className="admin-section">
+              <h2 className="admin-section-title">
+                Platform Metrics
               </h2>
-            </div>
-          </Link>
-        ))}
-      </div>
 
-      <div style={summaryBoxStyle}>
-        <h3 style={{ color: '#D4AF37', marginBottom: '15px' }}>
-          Platform Summary
-        </h3>
+              <div className="admin-stats-grid">
+                {cards.map(card => (
+                  <Link
+                    key={card.label}
+                    to={card.link}
+                    className="admin-stat-link"
+                  >
+                    <article className="admin-stat-card">
+                      <p>{card.label}</p>
+                      <h3>{card.value}</h3>
+                    </article>
+                  </Link>
+                ))}
+              </div>
+            </section>
 
-        <p style={{ color: '#D1D5DB' }}>
-          Total Engagement: <strong>{totalEngagement}</strong>
-        </p>
+            <section className="admin-summary-card">
+              <h2>Platform Summary</h2>
 
-        <p style={{ color: '#9CA3AF', marginTop: '10px' }}>
-          Newsletter Subscribers: {stats.subscribers}
-        </p>
+              <div className="admin-summary-list">
+                <SummaryRow
+                  label="Total Engagement"
+                  value={totalEngagement}
+                />
 
-        <p style={{ color: '#9CA3AF', marginTop: '10px' }}>
-          Newsletter System: Brevo Connected ✅
-        </p>
-      </div>
+                <SummaryRow
+                  label="Newsletter Subscribers"
+                  value={safeStats.subscribers}
+                />
 
-      <h2 style={sectionTitleStyle}>
-        Content Analytics
-      </h2>
+                <SummaryRow
+                  label="Newsletter System"
+                  value="Brevo Connected ✅"
+                  gold
+                />
+              </div>
+            </section>
 
-      <div style={analyticsGridStyle}>
-        <AnalyticsBox
-          title="🔥 Most Liked Articles"
-          items={analytics.liked}
-          label="likes"
-        />
+            <section className="admin-section">
+              <h2 className="admin-section-title">
+                Content Analytics
+              </h2>
 
-        <AnalyticsBox
-          title="💬 Most Commented Articles"
-          items={analytics.commented}
-          label="comments"
-        />
+              <div className="admin-analytics-grid">
+                <AnalyticsBox
+                  title="🔥 Most Liked Articles"
+                  items={analytics.liked}
+                  label="likes"
+                />
 
-        <AnalyticsBox
-          title="🔖 Most Saved Articles"
-          items={analytics.saved}
-          label="saves"
-        />
-      </div>
-    </div>
+                <AnalyticsBox
+                  title="💬 Most Commented Articles"
+                  items={analytics.commented}
+                  label="comments"
+                />
+
+                <AnalyticsBox
+                  title="🔖 Most Saved Articles"
+                  items={analytics.saved}
+                  label="saves"
+                />
+              </div>
+            </section>
+          </>
+        )}
+      </main>
+    </>
   )
 }
 
 function AdminAction({ title, text, link }) {
   return (
-    <Link to={link} style={{ textDecoration: 'none' }}>
-      <div style={actionCardStyle}>
-        <h3 style={{ color: '#D4AF37', marginBottom: '8px' }}>
-          {title}
-        </h3>
-
-        <p style={{ color: '#9CA3AF', lineHeight: '1.6' }}>
-          {text}
-        </p>
-      </div>
+    <Link to={link} className="admin-action-link">
+      <article className="admin-action-card">
+        <h2>{title}</h2>
+        <p>{text}</p>
+      </article>
     </Link>
   )
 }
 
 function AnalyticsBox({ title, items, label }) {
   return (
-    <div style={summaryBoxStyle}>
-      <h3 style={{ color: '#D4AF37', marginBottom: '18px' }}>
-        {title}
-      </h3>
+    <article className="admin-analytics-card">
+      <h2>{title}</h2>
 
       {items.length === 0 ? (
-        <p style={{ color: '#9CA3AF' }}>
+        <p className="admin-empty-text">
           No data yet.
         </p>
       ) : (
-        items.map(([articleId, count]) => (
-          <div key={articleId} style={analyticsItemStyle}>
-            <p style={{ color: '#fff', wordBreak: 'break-word' }}>
-              {articleId}
-            </p>
+        <div className="admin-analytics-list">
+          {items.map(([articleId, count]) => (
+            <div
+              key={articleId}
+              className="admin-analytics-item"
+            >
+              <p>{articleId}</p>
 
-            <small style={{ color: '#9CA3AF' }}>
-              {count} {label}
-            </small>
-          </div>
-        ))
+              <small>
+                {count} {label}
+              </small>
+            </div>
+          ))}
+        </div>
       )}
-    </div>
+    </article>
   )
 }
 
-const pageStyle = {
-  maxWidth: '1400px',
-  margin: '0 auto',
-  padding: '45px 20px',
-  color: '#fff'
-}
+function SummaryRow({ label, value, gold = false }) {
+  return (
+    <div className="admin-summary-row">
+      <span>{label}</span>
 
-const titleStyle = {
-  color: '#D4AF37',
-  fontSize: '42px',
-  marginBottom: '10px'
-}
-
-const subtitleStyle = {
-  color: '#9CA3AF',
-  marginBottom: '30px'
-}
-
-const adminGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
-  gap: '18px',
-  marginBottom: '42px'
-}
-
-const actionCardStyle = {
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '18px',
-  padding: '22px',
-  minHeight: '120px'
-}
-
-const sectionTitleStyle = {
-  color: '#D4AF37',
-  marginTop: '45px',
-  marginBottom: '24px'
-}
-
-const statsGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
-  gap: '24px'
-}
-
-const analyticsGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-  gap: '24px'
-}
-
-const cardStyle = {
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '20px',
-  padding: '28px',
-  transition: '0.2s'
-}
-
-const summaryBoxStyle = {
-  marginTop: '35px',
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '20px',
-  padding: '25px'
-}
-
-const analyticsItemStyle = {
-  borderBottom: '1px solid #232323',
-  padding: '12px 0'
+      <strong className={gold ? 'gold' : ''}>
+        {value}
+      </strong>
+    </div>
+  )
 }

@@ -1,0 +1,935 @@
+/* =========================================
+   VEDABYTE — ANIMATION SYSTEM
+   ========================================= */
+
+/* -----------------------------------------
+   Core Motion Variables
+   ----------------------------------------- */
+
+:root {
+  --vb-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --vb-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --vb-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --vb-duration-fast: 160ms;
+  --vb-duration-base: 240ms;
+  --vb-duration-slow: 420ms;
+  --vb-duration-reveal: 620ms;
+}
+
+/* -----------------------------------------
+   Fade
+   ----------------------------------------- */
+
+.vb-fade-in {
+  animation:
+    vb-fade-in
+    var(--vb-duration-slow)
+    var(--vb-ease-standard)
+    both;
+}
+
+.vb-fade-out {
+  animation:
+    vb-fade-out
+    var(--vb-duration-base)
+    var(--vb-ease-standard)
+    both;
+}
+
+/* -----------------------------------------
+   Slide Up
+   ----------------------------------------- */
+
+.vb-slide-up {
+  animation:
+    vb-slide-up
+    var(--vb-duration-reveal)
+    var(--vb-ease-emphasized)
+    both;
+}
+
+.vb-slide-up-sm {
+  animation:
+    vb-slide-up-sm
+    var(--vb-duration-slow)
+    var(--vb-ease-emphasized)
+    both;
+}
+
+.vb-slide-up-lg {
+  animation:
+    vb-slide-up-lg
+    760ms
+    var(--vb-ease-emphasized)
+    both;
+}
+
+/* -----------------------------------------
+   Slide Down
+   ----------------------------------------- */
+
+.vb-slide-down {
+  animation:
+    vb-slide-down
+    var(--vb-duration-slow)
+    var(--vb-ease-emphasized)
+    both;
+}
+
+/* -----------------------------------------
+   Slide Left / Right
+   ----------------------------------------- */
+
+.vb-slide-left {
+  animation:
+    vb-slide-left
+    var(--vb-duration-reveal)
+    var(--vb-ease-emphasized)
+    both;
+}
+
+.vb-slide-right {
+  animation:
+    vb-slide-right
+    var(--vb-duration-reveal)
+    var(--vb-ease-emphasized)
+    both;
+}
+
+/* -----------------------------------------
+   Scale
+   ----------------------------------------- */
+
+.vb-scale-in {
+  animation:
+    vb-scale-in
+    var(--vb-duration-slow)
+    var(--vb-ease-emphasized)
+    both;
+}
+
+.vb-scale-out {
+  animation:
+    vb-scale-out
+    var(--vb-duration-base)
+    var(--vb-ease-standard)
+    both;
+}
+
+/* -----------------------------------------
+   Pop
+   ----------------------------------------- */
+
+.vb-pop-in {
+  animation:
+    vb-pop-in
+    420ms
+    var(--vb-ease-emphasized)
+    both;
+}
+
+/* -----------------------------------------
+   Blur Reveal
+   ----------------------------------------- */
+
+.vb-blur-in {
+  animation:
+    vb-blur-in
+    680ms
+    var(--vb-ease-soft)
+    both;
+}
+
+/* -----------------------------------------
+   Page Reveal
+   ----------------------------------------- */
+
+.vb-page-reveal {
+  animation:
+    vb-page-reveal
+    700ms
+    var(--vb-ease-emphasized)
+    both;
+}
+
+/* -----------------------------------------
+   Stagger Children
+   ----------------------------------------- */
+
+.vb-stagger > * {
+  opacity: 0;
+  animation:
+    vb-slide-up-sm
+    520ms
+    var(--vb-ease-emphasized)
+    both;
+}
+
+.vb-stagger > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.vb-stagger > *:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.vb-stagger > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.vb-stagger > *:nth-child(4) {
+  animation-delay: 190ms;
+}
+
+.vb-stagger > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+
+.vb-stagger > *:nth-child(6) {
+  animation-delay: 290ms;
+}
+
+.vb-stagger > *:nth-child(7) {
+  animation-delay: 340ms;
+}
+
+.vb-stagger > *:nth-child(8) {
+  animation-delay: 390ms;
+}
+
+.vb-stagger > *:nth-child(9) {
+  animation-delay: 440ms;
+}
+
+.vb-stagger > *:nth-child(10) {
+  animation-delay: 490ms;
+}
+
+/* -----------------------------------------
+   Delay Utilities
+   ----------------------------------------- */
+
+.vb-delay-1 {
+  animation-delay: 80ms;
+}
+
+.vb-delay-2 {
+  animation-delay: 160ms;
+}
+
+.vb-delay-3 {
+  animation-delay: 240ms;
+}
+
+.vb-delay-4 {
+  animation-delay: 320ms;
+}
+
+.vb-delay-5 {
+  animation-delay: 400ms;
+}
+
+/* -----------------------------------------
+   Hover Lift
+   ----------------------------------------- */
+
+.vb-hover-lift {
+  transition:
+    transform var(--vb-duration-base) var(--vb-ease-standard),
+    border-color var(--vb-duration-base) var(--vb-ease-standard),
+    box-shadow var(--vb-duration-base) var(--vb-ease-standard);
+}
+
+.vb-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--vb-shadow-md);
+}
+
+/* -----------------------------------------
+   Hover Scale
+   ----------------------------------------- */
+
+.vb-hover-scale {
+  transition:
+    transform var(--vb-duration-base) var(--vb-ease-standard);
+}
+
+.vb-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* -----------------------------------------
+   Hover Glow
+   ----------------------------------------- */
+
+.vb-hover-glow {
+  transition:
+    border-color var(--vb-duration-base) var(--vb-ease-standard),
+    box-shadow var(--vb-duration-base) var(--vb-ease-standard);
+}
+
+.vb-hover-glow:hover {
+  border-color: var(--vb-border-gold);
+  box-shadow: var(--vb-shadow-gold);
+}
+
+/* -----------------------------------------
+   Hover Gold
+   ----------------------------------------- */
+
+.vb-hover-gold {
+  transition:
+    color var(--vb-duration-fast) var(--vb-ease-standard),
+    background var(--vb-duration-fast) var(--vb-ease-standard),
+    border-color var(--vb-duration-fast) var(--vb-ease-standard);
+}
+
+.vb-hover-gold:hover {
+  border-color: var(--vb-border-gold);
+  background: var(--vb-gold-soft);
+  color: var(--vb-gold-light);
+}
+
+/* -----------------------------------------
+   Image Zoom
+   ----------------------------------------- */
+
+.vb-image-zoom {
+  overflow: hidden;
+}
+
+.vb-image-zoom img {
+  transition:
+    transform
+    700ms
+    var(--vb-ease-soft);
+}
+
+.vb-image-zoom:hover img {
+  transform: scale(1.045);
+}
+
+/* -----------------------------------------
+   Shine Effect
+   ----------------------------------------- */
+
+.vb-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.vb-shine::after {
+  position: absolute;
+  top: -50%;
+  left: -120%;
+  width: 48%;
+  height: 200%;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.11),
+      transparent
+    );
+
+  content: "";
+  pointer-events: none;
+  transform: rotate(18deg);
+  transition:
+    left
+    760ms
+    var(--vb-ease-soft);
+}
+
+.vb-shine:hover::after {
+  left: 140%;
+}
+
+/* -----------------------------------------
+   Gold Sweep
+   ----------------------------------------- */
+
+.vb-gold-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.vb-gold-sweep::before {
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      110deg,
+      transparent 20%,
+      rgba(199, 168, 79, 0.1) 45%,
+      transparent 70%
+    );
+
+  content: "";
+  pointer-events: none;
+  transform: translateX(-120%);
+}
+
+.vb-gold-sweep:hover::before {
+  animation:
+    vb-gold-sweep
+    900ms
+    var(--vb-ease-soft);
+}
+
+/* -----------------------------------------
+   Pulse
+   ----------------------------------------- */
+
+.vb-pulse {
+  animation:
+    vb-pulse
+    1.8s
+    ease-in-out
+    infinite;
+}
+
+.vb-pulse-soft {
+  animation:
+    vb-pulse-soft
+    2.4s
+    ease-in-out
+    infinite;
+}
+
+/* -----------------------------------------
+   Gold Pulse
+   ----------------------------------------- */
+
+.vb-gold-pulse {
+  animation:
+    vb-gold-pulse
+    2.2s
+    ease-in-out
+    infinite;
+}
+
+/* -----------------------------------------
+   Float
+   ----------------------------------------- */
+
+.vb-float {
+  animation:
+    vb-float
+    4.5s
+    ease-in-out
+    infinite;
+}
+
+.vb-float-slow {
+  animation:
+    vb-float
+    7s
+    ease-in-out
+    infinite;
+}
+
+/* -----------------------------------------
+   Spin
+   ----------------------------------------- */
+
+.vb-spin {
+  animation:
+    vb-spin
+    900ms
+    linear
+    infinite;
+}
+
+.vb-spin-slow {
+  animation:
+    vb-spin
+    2.6s
+    linear
+    infinite;
+}
+
+/* -----------------------------------------
+   Loading Dots
+   ----------------------------------------- */
+
+.vb-loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vb-loading-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation:
+    vb-loading-dot
+    1.2s
+    ease-in-out
+    infinite;
+}
+
+.vb-loading-dots span:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.vb-loading-dots span:nth-child(3) {
+  animation-delay: 280ms;
+}
+
+/* -----------------------------------------
+   Skeleton Shimmer
+   ----------------------------------------- */
+
+.vb-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.vb-shimmer::after {
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+
+  content: "";
+  transform: translateX(-100%);
+  animation:
+    vb-shimmer
+    1.5s
+    infinite;
+}
+
+/* -----------------------------------------
+   Progress Motion
+   ----------------------------------------- */
+
+.vb-progress-animate {
+  transform-origin: left;
+  animation:
+    vb-progress-grow
+    900ms
+    var(--vb-ease-emphasized)
+    both;
+}
+
+/* -----------------------------------------
+   Underline Motion
+   ----------------------------------------- */
+
+.vb-underline {
+  position: relative;
+}
+
+.vb-underline::after {
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+
+  height: 1px;
+
+  background: var(--vb-gold);
+
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right;
+  transition:
+    transform
+    var(--vb-duration-base)
+    var(--vb-ease-standard);
+}
+
+.vb-underline:hover::after,
+.vb-underline:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* -----------------------------------------
+   Reveal Mask
+   ----------------------------------------- */
+
+.vb-reveal-mask {
+  overflow: hidden;
+}
+
+.vb-reveal-mask > * {
+  animation:
+    vb-reveal-mask
+    720ms
+    var(--vb-ease-emphasized)
+    both;
+}
+
+/* -----------------------------------------
+   Card Entrance
+   ----------------------------------------- */
+
+.vb-card-enter {
+  opacity: 0;
+  animation:
+    vb-card-enter
+    620ms
+    var(--vb-ease-emphasized)
+    forwards;
+}
+
+/* -----------------------------------------
+   Motion Safe Helpers
+   ----------------------------------------- */
+
+.vb-motion-safe {
+  will-change: transform, opacity;
+}
+
+.vb-motion-none {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* -----------------------------------------
+   Keyframes
+   ----------------------------------------- */
+
+@keyframes vb-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vb-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vb-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vb-slide-up-sm {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vb-slide-up-lg {
+  from {
+    opacity: 0;
+    transform: translateY(44px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vb-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vb-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes vb-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes vb-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes vb-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes vb-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes vb-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes vb-page-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vb-gold-sweep {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes vb-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.78;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes vb-pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.62;
+  }
+}
+
+@keyframes vb-gold-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(199, 168, 79, 0);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(199, 168, 79, 0.08);
+  }
+}
+
+@keyframes vb-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes vb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vb-loading-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes vb-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes vb-progress-grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes vb-reveal-mask {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vb-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* -----------------------------------------
+   Reduced Motion
+   ----------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .vb-fade-in,
+  .vb-fade-out,
+  .vb-slide-up,
+  .vb-slide-up-sm,
+  .vb-slide-up-lg,
+  .vb-slide-down,
+  .vb-slide-left,
+  .vb-slide-right,
+  .vb-scale-in,
+  .vb-scale-out,
+  .vb-pop-in,
+  .vb-blur-in,
+  .vb-page-reveal,
+  .vb-stagger > *,
+  .vb-pulse,
+  .vb-pulse-soft,
+  .vb-gold-pulse,
+  .vb-float,
+  .vb-float-slow,
+  .vb-spin,
+  .vb-spin-slow,
+  .vb-loading-dots span,
+  .vb-shimmer::after,
+  .vb-progress-animate,
+  .vb-reveal-mask > *,
+  .vb-card-enter {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .vb-hover-lift,
+  .vb-hover-scale,
+  .vb-hover-glow,
+  .vb-hover-gold,
+  .vb-image-zoom img,
+  .vb-shine::after,
+  .vb-underline::after {
+    transition: none !important;
+  }
+
+  .vb-hover-lift:hover,
+  .vb-hover-scale:hover,
+  .vb-image-zoom:hover img {
+    transform: none !important;
+  }
+}

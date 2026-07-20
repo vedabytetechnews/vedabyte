@@ -4,10 +4,10 @@ export async function getAllSubscribers() {
   const { data, error } = await supabase
     .from('newsletter_subscribers')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('subscribed_at', { ascending: false })
 
   if (error) {
-    console.error(error)
+    console.error('Subscriber loading error:', error)
     return []
   }
 
@@ -29,7 +29,7 @@ export async function deleteSubscriber(id) {
     .eq('id', id)
 
   if (error) {
-    console.error(error)
+    console.error('Subscriber deletion error:', error)
     return false
   }
 

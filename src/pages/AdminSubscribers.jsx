@@ -1,23 +1,48 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   getAllSubscribers,
   deleteSubscriber
 } from '../services/adminSubscriberService'
 
+import LoadingScreen from '../components/LoadingScreen'
+import SEO from '../components/SEO'
+
 export default function AdminSubscribers() {
   const [subscribers, setSubscribers] = useState([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
-    loadSubscribers()
-  }, [])
+    let mounted = true
 
-  async function loadSubscribers() {
-    const data = await getAllSubscribers()
-    setSubscribers(data)
-    setLoading(false)
-  }
+    async function loadSubscribers() {
+      try {
+        const data = await getAllSubscribers()
+
+        if (mounted) {
+          setSubscribers(Array.isArray(data) ? data : [])
+        }
+      } catch (loadError) {
+        console.error('Unable to load subscribers:', loadError)
+
+        if (mounted) {
+          setError('Unable to load newsletter subscribers right now.')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadSubscribers()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   async function handleDelete(id) {
     const confirmDelete = window.confirm(
@@ -26,20 +51,44 @@ export default function AdminSubscribers() {
 
     if (!confirmDelete) return
 
-    const success = await deleteSubscriber(id)
+    try {
+      setDeletingId(id)
 
-    if (success) {
-      setSubscribers(prev =>
-        prev.filter(item => item.id !== id)
-      )
+      const success = await deleteSubscriber(id)
+
+      if (success) {
+        setSubscribers(previousSubscribers =>
+          previousSubscribers.filter(item => item.id !== id)
+        )
+      }
+    } catch (deleteError) {
+      console.error('Unable to delete subscriber:', deleteError)
+    } finally {
+      setDeletingId(null)
     }
   }
 
+  const filteredSubscribers = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase()
+
+    if (!cleanQuery) {
+      return subscribers
+    }
+
+    return subscribers.filter(subscriber =>
+      String(subscriber.email || '')
+        .toLowerCase()
+        .includes(cleanQuery)
+    )
+  }, [query, subscribers])
+
   function exportCSV() {
+    if (filteredSubscribers.length === 0) return
+
     const rows = [
       ['Email', 'Verified', 'Subscribed At'],
       ...filteredSubscribers.map(item => [
-        item.email,
+        item.email || '',
         item.verified ? 'Yes' : 'No',
         item.subscribed_at || ''
       ])
@@ -53,7 +102,9 @@ export default function AdminSubscribers() {
       )
       .join('\n')
 
-    const blob = new Blob([csv], {
+    const csvWithBom = `\uFEFF${csv}`
+
+    const blob = new Blob([csvWithBom], {
       type: 'text/csv;charset=utf-8;'
     })
 
@@ -62,210 +113,203 @@ export default function AdminSubscribers() {
 
     link.href = url
     link.download = 'vedabyte-newsletter-subscribers.csv'
+
+    document.body.appendChild(link)
     link.click()
+    link.remove()
 
     URL.revokeObjectURL(url)
   }
 
-  const cleanQuery = query.trim().toLowerCase()
+  const verifiedCount = subscribers.filter(
+    item => item.verified
+  ).length
 
-  const filteredSubscribers = subscribers.filter(subscriber =>
-    subscriber.email.toLowerCase().includes(cleanQuery)
-  )
-
-  const verifiedCount = subscribers.filter(item => item.verified).length
-  const unverifiedCount = subscribers.length - verifiedCount
+  const unverifiedCount =
+    subscribers.length - verifiedCount
 
   if (loading) {
     return (
-      <div style={{ color: '#fff', padding: '50px 20px' }}>
-        Loading subscribers...
-      </div>
+      <LoadingScreen message="Loading subscribers..." />
     )
   }
 
   return (
-    <div
-      style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '45px 20px',
-        color: '#fff'
-      }}
-    >
-      <h1
-        style={{
-          color: '#D4AF37',
-          fontSize: '42px',
-          marginBottom: '10px'
-        }}
-      >
-        Newsletter Subscribers
-      </h1>
+    <>
+      <SEO
+        title="Newsletter Subscribers | VedaByte Admin"
+        description="Manage, search and export VedaByte newsletter subscribers."
+        url="https://vedabyte-delta.vercel.app/admin/subscribers"
+      />
 
-      <p style={{ color: '#9CA3AF', marginBottom: '30px' }}>
-        Manage VedaByte newsletter audience and Brevo subscriber growth.
-      </p>
+      <main className="admin-subscribers-page">
+        <header className="admin-subscribers-header">
+          <p className="admin-subscribers-label">
+            NEWSLETTER AUDIENCE
+          </p>
 
-      <div style={statsGridStyle}>
-        <StatCard label="Total Subscribers" value={subscribers.length} />
-        <StatCard label="Verified" value={verifiedCount} />
-        <StatCard label="Unverified" value={unverifiedCount} />
-        <StatCard label="Visible Results" value={filteredSubscribers.length} />
-      </div>
+          <h1>Newsletter Subscribers</h1>
 
-      <div style={toolbarStyle}>
-        <input
-          type="text"
-          placeholder="Search subscriber email..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          style={inputStyle}
-        />
+          <p>
+            Manage VedaByte newsletter audience and Brevo subscriber
+            growth.
+          </p>
+        </header>
 
-        <button
-          onClick={exportCSV}
-          disabled={filteredSubscribers.length === 0}
-          style={{
-            ...exportButtonStyle,
-            opacity: filteredSubscribers.length === 0 ? 0.5 : 1,
-            cursor: filteredSubscribers.length === 0 ? 'not-allowed' : 'pointer'
-          }}
-        >
-          Export CSV
-        </button>
-      </div>
-
-      {filteredSubscribers.length === 0 ? (
-        <div style={boxStyle}>No subscribers found.</div>
-      ) : (
-        filteredSubscribers.map(subscriber => (
-          <div key={subscriber.id} style={boxStyle}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '16px',
-                flexWrap: 'wrap'
-              }}
+        {error ? (
+          <section className="admin-subscribers-error">
+            <h2>Subscribers unavailable</h2>
+            <p>{error}</p>
+          </section>
+        ) : (
+          <>
+            <section
+              className="admin-subscriber-stats-grid"
+              aria-label="Subscriber statistics"
             >
-              <div>
-                <p style={{ color: '#fff', fontWeight: '800' }}>
-                  {subscriber.email}
-                </p>
+              <StatCard
+                label="Total Subscribers"
+                value={subscribers.length}
+              />
 
-                <p style={metaStyle}>
-                  Verified: {subscriber.verified ? '✅ Yes' : '❌ No'}
-                </p>
+              <StatCard
+                label="Verified"
+                value={verifiedCount}
+              />
 
-                <p style={metaStyle}>
-                  Subscribed:{' '}
-                  {subscriber.subscribed_at
-                    ? new Date(subscriber.subscribed_at).toLocaleString()
-                    : 'Unknown'}
-                </p>
+              <StatCard
+                label="Unverified"
+                value={unverifiedCount}
+              />
 
-                <p style={metaStyle}>
-                  Brevo List: VedaByte Newsletter
-                </p>
+              <StatCard
+                label="Visible Results"
+                value={filteredSubscribers.length}
+              />
+            </section>
+
+            <section className="admin-subscriber-toolbar">
+              <div className="admin-subscriber-search">
+                <label htmlFor="subscriber-search">
+                  Search subscribers
+                </label>
+
+                <input
+                  id="subscriber-search"
+                  type="search"
+                  placeholder="Search subscriber email..."
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
               </div>
 
               <button
-                onClick={() => handleDelete(subscriber.id)}
-                style={deleteButtonStyle}
+                type="button"
+                onClick={exportCSV}
+                disabled={filteredSubscribers.length === 0}
+                className="admin-subscriber-export-button"
               >
-                Delete
+                Export CSV
               </button>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
+            </section>
+
+            <p className="admin-subscriber-results">
+              Showing {filteredSubscribers.length} of{' '}
+              {subscribers.length} subscribers
+            </p>
+
+            {filteredSubscribers.length === 0 ? (
+              <section className="admin-subscribers-empty">
+                <h2>No subscribers found</h2>
+
+                <p>
+                  Try searching with a different email address.
+                </p>
+              </section>
+            ) : (
+              <section className="admin-subscriber-list">
+                {filteredSubscribers.map(subscriber => (
+                  <SubscriberCard
+                    key={subscriber.id}
+                    subscriber={subscriber}
+                    deleting={
+                      deletingId === subscriber.id
+                    }
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </section>
+            )}
+          </>
+        )}
+      </main>
+    </>
   )
 }
 
 function StatCard({ label, value }) {
   return (
-    <div style={statCardStyle}>
-      <p style={{ color: '#9CA3AF', fontSize: '14px' }}>
-        {label}
-      </p>
-
-      <h2
-        style={{
-          color: '#D4AF37',
-          fontSize: '32px',
-          marginTop: '8px'
-        }}
-      >
-        {value}
-      </h2>
-    </div>
+    <article className="admin-subscriber-stat-card">
+      <p>{label}</p>
+      <h2>{value}</h2>
+    </article>
   )
 }
 
-const statsGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
-  gap: '16px',
-  marginBottom: '28px'
-}
+function SubscriberCard({
+  subscriber,
+  deleting,
+  onDelete
+}) {
+  return (
+    <article className="admin-subscriber-card">
+      <div className="admin-subscriber-information">
+        <div className="admin-subscriber-email-row">
+          <h2>{subscriber.email}</h2>
 
-const statCardStyle = {
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '18px',
-  padding: '22px'
-}
+          <span
+            className={
+              subscriber.verified
+                ? 'admin-subscriber-status verified'
+                : 'admin-subscriber-status unverified'
+            }
+          >
+            {subscriber.verified
+              ? 'Verified'
+              : 'Unverified'}
+          </span>
+        </div>
 
-const toolbarStyle = {
-  display: 'flex',
-  gap: '14px',
-  flexWrap: 'wrap',
-  marginBottom: '25px'
-}
+        <div className="admin-subscriber-meta">
+          <p>
+            <strong>Subscribed:</strong>{' '}
+            {subscriber.subscribed_at
+              ? new Date(
+                  subscriber.subscribed_at
+                ).toLocaleString()
+              : 'Unknown'}
+          </p>
 
-const inputStyle = {
-  flex: 1,
-  minWidth: '260px',
-  background: '#111111',
-  border: '1px solid #232323',
-  color: '#fff',
-  padding: '14px 16px',
-  borderRadius: '12px',
-  fontSize: '15px'
-}
+          <p>
+            <strong>Brevo list:</strong>{' '}
+            VedaByte Newsletter
+          </p>
 
-const exportButtonStyle = {
-  background: '#D4AF37',
-  color: '#000',
-  border: 'none',
-  padding: '12px 18px',
-  borderRadius: '12px',
-  fontWeight: '900'
-}
+          <p className="admin-subscriber-id">
+            <strong>Subscriber ID:</strong>{' '}
+            {subscriber.id}
+          </p>
+        </div>
+      </div>
 
-const boxStyle = {
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '18px',
-  padding: '22px',
-  marginBottom: '18px'
-}
-
-const metaStyle = {
-  color: '#9CA3AF',
-  fontSize: '13px',
-  marginTop: '6px'
-}
-
-const deleteButtonStyle = {
-  alignSelf: 'center',
-  background: '#7F1D1D',
-  color: '#fff',
-  border: 'none',
-  padding: '10px 16px',
-  borderRadius: '10px',
-  cursor: 'pointer',
-  fontWeight: '900'
+      <button
+        type="button"
+        onClick={() => onDelete(subscriber.id)}
+        disabled={deleting}
+        className="admin-subscriber-delete-button"
+      >
+        {deleting ? 'Deleting...' : 'Delete'}
+      </button>
+    </article>
+  )
 }

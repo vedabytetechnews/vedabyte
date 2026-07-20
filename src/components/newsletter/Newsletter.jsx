@@ -9,8 +9,8 @@ export default function Newsletter() {
   })
   const [loading, setLoading] = useState(false)
 
-  async function handleSubscribe(e) {
-    e.preventDefault()
+  async function handleSubscribe(event) {
+    event.preventDefault()
 
     const cleanEmail = email.trim().toLowerCase()
 
@@ -25,102 +25,122 @@ export default function Newsletter() {
       return
     }
 
-    setLoading(true)
-    setStatus({ type: '', message: '' })
+    try {
+      setLoading(true)
+      setStatus({
+        type: '',
+        message: ''
+      })
 
-    const result = await subscribeEmail(cleanEmail)
+      const result = await subscribeEmail(cleanEmail)
 
-    setStatus({
-      type: result.success ? 'success' : 'error',
-      message: result.message
-    })
+      setStatus({
+        type: result.success ? 'success' : 'error',
+        message: result.message
+      })
 
-    if (result.success) {
-      setEmail('')
+      if (result.success) {
+        setEmail('')
+      }
+    } catch (error) {
+      console.error('Newsletter subscription failed:', error)
+
+      setStatus({
+        type: 'error',
+        message: 'Unable to subscribe right now. Please try again.'
+      })
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
-    <div
-      style={{
-        marginTop: '80px',
-        background: '#111111',
-        border: '1px solid #232323',
-        borderRadius: '20px',
-        padding: '40px',
-        textAlign: 'center'
-      }}
-    >
-      <h2
-        style={{
-          color: '#D4AF37',
-          marginBottom: '15px',
-          fontSize: '32px'
-        }}
-      >
-        Join The VedaByte Tech Newsletter
-      </h2>
-
-      <p
-        style={{
-          color: '#D1D5DB',
-          marginBottom: '25px'
-        }}
-      >
-        Get the latest AI, startup and technology news delivered to your inbox.
-      </p>
-
-      <form onSubmit={handleSubscribe}>
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={loading}
-          style={{
-            width: '320px',
-            maxWidth: '100%',
-            padding: '12px',
-            borderRadius: '10px',
-            border: '1px solid #232323',
-            background: '#0A0A0A',
-            color: '#FFFFFF',
-            marginRight: '10px'
-          }}
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            background: loading ? '#8a742b' : '#D4AF37',
-            color: '#000',
-            border: 'none',
-            padding: '12px 20px',
-            borderRadius: '10px',
-            fontWeight: '700',
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {loading ? 'Subscribing...' : 'Subscribe'}
-        </button>
-      </form>
-
-      {status.message && (
-        <p
-          style={{
-            color: status.type === 'success' ? '#22c55e' : '#ef4444',
-            marginTop: '20px',
-            fontWeight: '600'
-          }}
-        >
-          {status.type === 'success' ? '✓ ' : '⚠ '}
-          {status.message}
+    <section className="newsletter-panel">
+      <div className="newsletter-panel__content">
+        <p className="newsletter-panel__eyebrow">
+          VedaByte Intelligence
         </p>
-      )}
-    </div>
+
+        <h2 className="newsletter-panel__title">
+          Join the VedaByte Tech Newsletter
+        </h2>
+
+        <p className="newsletter-panel__description">
+          Get the latest AI, startup and technology news delivered to your
+          inbox.
+        </p>
+
+        <form
+          onSubmit={handleSubscribe}
+          className="newsletter-panel__form"
+          noValidate
+        >
+          <label
+            htmlFor="newsletter-email"
+            className="newsletter-panel__label"
+          >
+            Email address
+          </label>
+
+          <div className="newsletter-panel__fields">
+            <input
+              id="newsletter-email"
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={event => setEmail(event.target.value)}
+              required
+              disabled={loading}
+              autoComplete="email"
+              inputMode="email"
+              className="newsletter-panel__input"
+              aria-invalid={status.type === 'error'}
+              aria-describedby={
+                status.message
+                  ? 'newsletter-status'
+                  : undefined
+              }
+            />
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="newsletter-panel__button"
+            >
+              {loading ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="newsletter-panel__spinner"
+                  />
+                  Subscribing...
+                </>
+              ) : (
+                'Subscribe'
+              )}
+            </button>
+          </div>
+        </form>
+
+        {status.message && (
+          <p
+            id="newsletter-status"
+            role={status.type === 'error' ? 'alert' : 'status'}
+            className={`newsletter-panel__status newsletter-panel__status--${status.type}`}
+          >
+            <span aria-hidden="true">
+              {status.type === 'success' ? '✓' : '⚠'}
+            </span>
+
+            {status.message}
+          </p>
+        )}
+
+        <p className="newsletter-panel__privacy">
+          No spam. Unsubscribe at any time.
+        </p>
+      </div>
+    </section>
   )
 }

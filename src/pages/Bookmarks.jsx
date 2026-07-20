@@ -6,280 +6,236 @@ import {
   getBookmarks,
   removeBookmark
 } from '../services/bookmarkService'
+import LoadingScreen from '../components/LoadingScreen'
+import SEO from '../components/SEO'
+import { handleImageError } from '../lib/imageFallback'
 
 export default function Bookmarks() {
   const { user, isAuthenticated } = useAuth()
+
   const [bookmarks, setBookmarks] = useState([])
   const [loading, setLoading] = useState(true)
-
-  async function handleRemove(bookmarkId) {
-    const success = await removeBookmark(bookmarkId)
-
-    if (success) {
-      setBookmarks(
-        bookmarks.filter(item => item.id !== bookmarkId)
-      )
-    }
-  }
+  const [error, setError] = useState('')
+  const [removingId, setRemovingId] = useState(null)
 
   useEffect(() => {
+    let isMounted = true
+
     async function loadBookmarks() {
       if (!isAuthenticated || !user) {
-        setLoading(false)
+        if (isMounted) {
+          setBookmarks([])
+          setLoading(false)
+        }
+
         return
       }
 
-      const data = await getBookmarks(user.id)
-      setBookmarks(data)
-      setLoading(false)
+      try {
+        if (isMounted) {
+          setLoading(true)
+          setError('')
+        }
+
+        const data = await getBookmarks(user.id)
+
+        if (isMounted) {
+          setBookmarks(Array.isArray(data) ? data : [])
+        }
+      } catch (loadError) {
+        console.error('Bookmarks loading failed:', loadError)
+
+        if (isMounted) {
+          setBookmarks([])
+          setError('Unable to load your saved articles.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
     }
 
     loadBookmarks()
+
+    return () => {
+      isMounted = false
+    }
   }, [user, isAuthenticated])
 
-  if (!isAuthenticated) {
-    return (
-      <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '45px 20px',
-          color: '#fff'
-        }}
-      >
-        <h1
-          style={{
-            color: '#D4AF37',
-            fontSize: '42px',
-            marginBottom: '12px'
-          }}
-        >
-          Saved Articles
-        </h1>
+  async function handleRemove(bookmarkId) {
+    try {
+      setRemovingId(bookmarkId)
 
-        <p style={{ color: '#9CA3AF' }}>
-          Please sign in to view your saved articles.
-        </p>
-      </div>
-    )
+      const success = await removeBookmark(bookmarkId)
+
+      if (success) {
+        setBookmarks(currentBookmarks =>
+          currentBookmarks.filter(item => item.id !== bookmarkId)
+        )
+      }
+    } catch (removeError) {
+      console.error('Bookmark removal failed:', removeError)
+      alert('Unable to remove this saved article.')
+    } finally {
+      setRemovingId(null)
+    }
   }
 
   if (loading) {
+    return <LoadingScreen message="Loading saved articles..." />
+  }
+
+  if (!isAuthenticated || !user) {
     return (
-      <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '45px 20px',
-          color: '#fff'
-        }}
-      >
-        Loading saved articles...
-      </div>
+      <>
+        <SEO
+          title="Saved Articles | VedaByte"
+          description="Sign in to view your saved VedaByte technology articles."
+          url="https://vedabyte-delta.vercel.app/bookmarks"
+        />
+
+        <main className="bookmarks-page bookmarks-access-page">
+          <section className="bookmarks-access-card">
+            <p className="bookmarks-label">VEDABYTE LIBRARY</p>
+
+            <h1 className="bookmarks-title">Saved Articles</h1>
+
+            <p className="bookmarks-text">
+              Please sign in to view articles you saved for later.
+            </p>
+
+            <Link to="/profile" className="bookmarks-primary-button">
+              Sign In
+            </Link>
+          </section>
+        </main>
+      </>
     )
   }
 
   return (
-    <div
-      style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '45px 20px'
-      }}
-    >
-      <div
-        style={{
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '24px',
-          padding: '32px',
-          marginBottom: '35px'
-        }}
-      >
-        <h1
-          style={{
-            color: '#D4AF37',
-            fontSize: '42px',
-            marginBottom: '10px'
-          }}
-        >
-          Saved Articles
-        </h1>
+    <>
+      <SEO
+        title="Saved Articles | VedaByte"
+        description="Review technology articles saved to your VedaByte account."
+        url="https://vedabyte-delta.vercel.app/bookmarks"
+      />
 
-        <p style={{ color: '#D1D5DB' }}>
-          Articles you saved for reading later.
-        </p>
+      <main className="bookmarks-page">
+        <header className="bookmarks-header">
+          <p className="bookmarks-label">VEDABYTE LIBRARY</p>
 
-        <p
-          style={{
-            color: '#9CA3AF',
-            marginTop: '12px'
-          }}
-        >
-          {bookmarks.length} saved item{bookmarks.length !== 1 ? 's' : ''}
-        </p>
-      </div>
+          <h1 className="bookmarks-title">Saved Articles</h1>
 
-      {bookmarks.length === 0 ? (
-        <div
-          style={{
-            background: '#111111',
-            border: '1px solid #232323',
-            borderRadius: '20px',
-            padding: '40px',
-            textAlign: 'center'
-          }}
-        >
-          <h2
-            style={{
-              color: '#FFFFFF',
-              marginBottom: '10px'
-            }}
-          >
-            No saved articles yet
-          </h2>
-
-          <p style={{ color: '#9CA3AF', marginBottom: '20px' }}>
-            Save articles from the homepage or article pages and they will appear here.
+          <p className="bookmarks-text">
+            Articles you saved for reading later.
           </p>
 
-          <Link
-            to="/"
-            style={{
-              background: '#D4AF37',
-              color: '#000',
-              padding: '12px 20px',
-              borderRadius: '10px',
-              fontWeight: '800',
-              textDecoration: 'none',
-              display: 'inline-block'
-            }}
+          <p className="bookmarks-count">
+            {bookmarks.length} saved item
+            {bookmarks.length !== 1 ? 's' : ''}
+          </p>
+        </header>
+
+        {error ? (
+          <section className="bookmarks-empty-card error">
+            <h2>Something went wrong</h2>
+            <p>{error}</p>
+          </section>
+        ) : bookmarks.length === 0 ? (
+          <section className="bookmarks-empty-card">
+            <h2>No saved articles yet</h2>
+
+            <p>
+              Save articles from the homepage or article pages and they
+              will appear here.
+            </p>
+
+            <Link to="/" className="bookmarks-primary-button">
+              Browse Articles
+            </Link>
+          </section>
+        ) : (
+          <section
+            className="bookmarks-grid"
+            aria-label="Saved articles"
           >
-            Browse Articles
-          </Link>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))',
-            gap: '24px'
-          }}
-        >
-          {bookmarks.map(article => (
-            <div
-              key={article.id}
-              style={{
-                background: '#111111',
-                border: '1px solid #232323',
-                borderRadius: '18px',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-            >
-              <img
-                src={
-                  article.article_image ||
-                  'https://picsum.photos/600/400'
-                }
-                alt={article.article_title}
-                style={{
-                  width: '100%',
-                  height: '200px',
-                  objectFit: 'cover'
-                }}
-              />
+            {bookmarks.map(article => {
+              const isRemoving = removingId === article.id
 
-              <div
-                style={{
-                  padding: '18px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  flex: 1
-                }}
-              >
-                <span
-                  style={{
-                    color: '#D4AF37',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase'
-                  }}
+              return (
+                <article
+                  key={article.id}
+                  className="bookmark-card"
                 >
-                  {article.article_category || 'Technology'}
-                </span>
+                  <img
+                    src={
+                      article.article_image ||
+                      '/og-image.png'
+                    }
+                    alt={article.article_title}
+                    loading="lazy"
+                    decoding="async"
+                    onError={handleImageError}
+                    width="640"
+                    height="360"
+                    className="bookmark-image"
+                  />
 
-                <h3
-                  style={{
-                    color: '#fff',
-                    marginTop: '10px',
-                    lineHeight: '1.5'
-                  }}
-                >
-                  {article.article_title}
-                </h3>
+                  <div className="bookmark-content">
+                    <span className="bookmark-category">
+                      {article.article_category || 'Technology'}
+                    </span>
 
-                <p
-                  style={{
-                    color: '#6B7280',
-                    fontSize: '12px',
-                    marginTop: '10px'
-                  }}
-                >
-                  Saved:{' '}
-                  {article.created_at
-                    ? new Date(article.created_at).toLocaleDateString()
-                    : 'Recently'}
-                </p>
+                    <h2 className="bookmark-title">
+                      {article.article_title}
+                    </h2>
 
-                <div
-                  style={{
-                    marginTop: 'auto',
-                    display: 'flex',
-                    gap: '10px',
-                    paddingTop: '18px'
-                  }}
-                >
-                  <Link
-                    to={`/article/${article.article_id}`}
-                    style={{
-                      flex: 1,
-                      background: '#D4AF37',
-                      color: '#000',
-                      border: 'none',
-                      padding: '10px',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      fontWeight: '800',
-                      textAlign: 'center',
-                      textDecoration: 'none'
-                    }}
-                  >
-                    Open
-                  </Link>
+                    <p className="bookmark-date">
+                      Saved: {formatSavedDate(article.created_at)}
+                    </p>
 
-                  <button
-                    onClick={() => handleRemove(article.id)}
-                    style={{
-                      flex: 1,
-                      background: '#dc2626',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '10px',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      fontWeight: '700'
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+                    <div className="bookmark-actions">
+                      <Link
+                        to={`/article/${article.article_id}`}
+                        className="bookmark-open-button"
+                      >
+                        Open
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(article.id)}
+                        disabled={isRemoving}
+                        className="bookmark-remove-button"
+                      >
+                        {isRemoving ? 'Removing...' : 'Remove'}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
+          </section>
+        )}
+      </main>
+    </>
   )
+}
+
+function formatSavedDate(dateValue) {
+  if (!dateValue) return 'Recently'
+
+  const date = new Date(dateValue)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Recently'
+  }
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
 }

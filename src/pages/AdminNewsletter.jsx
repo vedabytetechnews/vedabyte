@@ -1,107 +1,234 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+
+import SEO from '../components/SEO'
 
 export default function AdminNewsletter() {
   const [subject, setSubject] = useState('')
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [status, setStatus] = useState('')
 
-  async function handleSend(e) {
-    e.preventDefault()
+  const contentLength = content.length
+
+  const canSubmit = useMemo(() => {
+    return (
+      subject.trim().length > 0 &&
+      content.trim().length > 0 &&
+      !loading
+    )
+  }, [subject, content, loading])
+
+  async function handleSend(event) {
+    event.preventDefault()
+
+    if (!canSubmit) return
 
     setLoading(true)
     setMessage('')
+    setStatus('')
 
-    const response = await fetch('/api/send-newsletter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, content })
-    })
+    try {
+      const response = await fetch('/api/send-newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          subject: subject.trim(),
+          content: content.trim()
+        })
+      })
 
-    const data = await response.json()
+      let data = {}
 
-    if (data.success) {
-      setMessage('✅ Newsletter campaign created in Brevo.')
+      try {
+        data = await response.json()
+      } catch {
+        data = {}
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message ||
+            `Newsletter request failed with status ${response.status}.`
+        )
+      }
+
+      setStatus('success')
+      setMessage(
+        'Newsletter campaign was created successfully in Brevo.'
+      )
       setSubject('')
       setContent('')
-    } else {
-      setMessage('❌ Failed: ' + (data.message || 'Unknown error'))
-      console.error(data)
-    }
+    } catch (sendError) {
+      console.error('Newsletter campaign creation failed:', sendError)
 
-    setLoading(false)
+      setStatus('error')
+      setMessage(
+        sendError.message ||
+          'The newsletter campaign could not be created.'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '45px 20px', color: '#fff' }}>
-      <h1 style={{ color: '#D4AF37', fontSize: '42px', marginBottom: '10px' }}>
-        Send Newsletter
-      </h1>
+    <>
+      <SEO
+        title="Send Newsletter | VedaByte Admin"
+        description="Create and send VedaByte newsletter campaigns through Brevo."
+        url="https://vedabyte-delta.vercel.app/admin/newsletter"
+      />
 
-      <p style={{ color: '#9CA3AF', marginBottom: '30px' }}>
-        Create a VedaByte newsletter campaign in Brevo.
-      </p>
-
-      <form onSubmit={handleSend} style={{ background: '#111', border: '1px solid #232323', borderRadius: '20px', padding: '25px' }}>
-        <label style={labelStyle}>Subject</label>
-        <input
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Example: This Week in AI"
-          required
-          style={inputStyle}
-        />
-
-        <label style={labelStyle}>Newsletter Content</label>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Write your newsletter here..."
-          required
-          rows="10"
-          style={{ ...inputStyle, resize: 'vertical' }}
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            background: loading ? '#8a742b' : '#D4AF37',
-            color: '#000',
-            border: 'none',
-            padding: '13px 22px',
-            borderRadius: '12px',
-            fontWeight: '900',
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {loading ? 'Creating...' : 'Create Brevo Campaign'}
-        </button>
-
-        {message && (
-          <p style={{ marginTop: '20px', color: message.startsWith('✅') ? '#22c55e' : '#ef4444' }}>
-            {message}
+      <main className="admin-newsletter-page">
+        <header className="admin-newsletter-header">
+          <p className="admin-newsletter-label">
+            BREVO CAMPAIGNS
           </p>
-        )}
-      </form>
-    </div>
+
+          <h1>Send Newsletter</h1>
+
+          <p>
+            Create a VedaByte newsletter campaign for your subscribers.
+          </p>
+        </header>
+
+        <section className="admin-newsletter-layout">
+          <form
+            onSubmit={handleSend}
+            className="admin-newsletter-form"
+          >
+            <div className="admin-newsletter-field">
+              <label htmlFor="newsletter-subject">
+                Subject
+              </label>
+
+              <input
+                id="newsletter-subject"
+                type="text"
+                value={subject}
+                onChange={event => {
+                  setSubject(event.target.value)
+                  setMessage('')
+                  setStatus('')
+                }}
+                placeholder="Example: This Week in AI"
+                maxLength={150}
+                required
+              />
+
+              <div className="admin-newsletter-field-info">
+                <span>
+                  Keep the subject clear and specific.
+                </span>
+
+                <span>
+                  {subject.length}/150
+                </span>
+              </div>
+            </div>
+
+            <div className="admin-newsletter-field">
+              <label htmlFor="newsletter-content">
+                Newsletter content
+              </label>
+
+              <textarea
+                id="newsletter-content"
+                value={content}
+                onChange={event => {
+                  setContent(event.target.value)
+                  setMessage('')
+                  setStatus('')
+                }}
+                placeholder="Write your newsletter here..."
+                rows={12}
+                required
+              />
+
+              <div className="admin-newsletter-field-info">
+                <span>
+                  This content will be sent to Brevo.
+                </span>
+
+                <span>
+                  {contentLength} characters
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="admin-newsletter-submit"
+            >
+              {loading
+                ? 'Creating campaign...'
+                : 'Create Brevo Campaign'}
+            </button>
+
+            {message && (
+              <div
+                className={`admin-newsletter-message ${status}`}
+                role={status === 'error' ? 'alert' : 'status'}
+              >
+                <strong>
+                  {status === 'success'
+                    ? 'Campaign created'
+                    : 'Campaign failed'}
+                </strong>
+
+                <p>{message}</p>
+              </div>
+            )}
+          </form>
+
+          <aside className="admin-newsletter-guide">
+            <p className="admin-newsletter-guide-label">
+              BEFORE SENDING
+            </p>
+
+            <h2>Campaign checklist</h2>
+
+            <div className="admin-newsletter-checklist">
+              <div>
+                <span>1</span>
+                <p>
+                  Confirm the subject has no spelling mistakes.
+                </p>
+              </div>
+
+              <div>
+                <span>2</span>
+                <p>
+                  Check article links and calls to action.
+                </p>
+              </div>
+
+              <div>
+                <span>3</span>
+                <p>
+                  Preview the campaign inside Brevo before sending.
+                </p>
+              </div>
+
+              <div>
+                <span>4</span>
+                <p>
+                  Confirm the correct subscriber list is selected.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-newsletter-note">
+              Creating the campaign does not necessarily mean it is sent
+              immediately. Review its status in Brevo after creation.
+            </div>
+          </aside>
+        </section>
+      </main>
+    </>
   )
-}
-
-const labelStyle = {
-  display: 'block',
-  color: '#D4AF37',
-  fontWeight: '800',
-  marginBottom: '8px'
-}
-
-const inputStyle = {
-  width: '100%',
-  background: '#0A0A0A',
-  border: '1px solid #232323',
-  color: '#fff',
-  padding: '14px',
-  borderRadius: '12px',
-  marginBottom: '20px',
-  fontSize: '15px'
 }

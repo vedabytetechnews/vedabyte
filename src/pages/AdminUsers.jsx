@@ -1,85 +1,234 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getAllUsers } from '../services/adminUserService'
+
+import LoadingScreen from '../components/LoadingScreen'
+import SEO from '../components/SEO'
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
+  const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    let mounted = true
+
     async function loadUsers() {
-      const data = await getAllUsers()
-      setUsers(data)
-      setLoading(false)
+      try {
+        const data = await getAllUsers()
+
+        if (mounted) {
+          setUsers(Array.isArray(data) ? data : [])
+        }
+      } catch (loadError) {
+        console.error('Unable to load users:', loadError)
+
+        if (mounted) {
+          setError('Unable to load registered users right now.')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
     }
 
     loadUsers()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
+  const filteredUsers = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase()
+
+    if (!cleanQuery) {
+      return users
+    }
+
+    return users.filter(user => {
+      const displayName = String(
+        user.display_name || ''
+      ).toLowerCase()
+
+      const email = String(
+        user.email || ''
+      ).toLowerCase()
+
+      const userId = String(
+        user.id || ''
+      ).toLowerCase()
+
+      return (
+        displayName.includes(cleanQuery) ||
+        email.includes(cleanQuery) ||
+        userId.includes(cleanQuery)
+      )
+    })
+  }, [query, users])
+
   if (loading) {
-    return (
-      <div style={{ color: '#fff', padding: '50px 20px' }}>
-        Loading users...
-      </div>
-    )
+    return <LoadingScreen message="Loading users..." />
   }
 
   return (
-    <div
-      style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '45px 20px',
-        color: '#fff'
-      }}
-    >
-      <h1 style={{ color: '#D4AF37', fontSize: '42px' }}>
-        Users
-      </h1>
+    <>
+      <SEO
+        title="Registered Users | VedaByte Admin"
+        description="View registered VedaByte users and account information."
+        url="https://vedabyte-delta.vercel.app/admin/users"
+      />
 
-      <p style={{ color: '#9CA3AF', marginBottom: '30px' }}>
-        Registered VedaByte users.
-      </p>
+      <main className="admin-users-page">
+        <header className="admin-users-header">
+          <p className="admin-users-label">
+            USER MANAGEMENT
+          </p>
 
-      {users.length === 0 ? (
-        <div style={boxStyle}>No users found.</div>
-      ) : (
-        users.map(user => (
-          <div key={user.id} style={boxStyle}>
-            <p style={{ fontWeight: '800' }}>
-              {user.display_name || user.email || 'Unnamed User'}
-            </p>
+          <h1>Registered Users</h1>
 
-            <p style={metaStyle}>
-              Email: {user.email || 'Not available'}
-            </p>
+          <p>
+            View VedaByte user accounts and registration details.
+          </p>
+        </header>
 
-            <p style={metaStyle}>
-              User ID: {user.id}
-            </p>
+        {error ? (
+          <section className="admin-users-error">
+            <h2>Users unavailable</h2>
+            <p>{error}</p>
+          </section>
+        ) : (
+          <>
+            <section
+              className="admin-user-stats-grid"
+              aria-label="User statistics"
+            >
+              <UserStatCard
+                label="Total Users"
+                value={users.length}
+              />
 
-            <p style={metaStyle}>
-              Joined:{' '}
-              {user.created_at
-                ? new Date(user.created_at).toLocaleString()
-                : 'Unknown'}
-            </p>
-          </div>
-        ))
-      )}
-    </div>
+              <UserStatCard
+                label="Visible Results"
+                value={filteredUsers.length}
+              />
+
+              <UserStatCard
+                label="Named Profiles"
+                value={
+                  users.filter(user => user.display_name).length
+                }
+              />
+
+              <UserStatCard
+                label="Email Accounts"
+                value={
+                  users.filter(user => user.email).length
+                }
+              />
+            </section>
+
+            <section className="admin-users-toolbar">
+              <label htmlFor="admin-user-search">
+                Search users
+              </label>
+
+              <input
+                id="admin-user-search"
+                type="search"
+                placeholder="Search by name, email or user ID..."
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+              />
+
+              <p>
+                Showing {filteredUsers.length} of {users.length} users
+              </p>
+            </section>
+
+            {filteredUsers.length === 0 ? (
+              <section className="admin-users-empty">
+                <h2>No users found</h2>
+
+                <p>
+                  Try searching with a different name, email address or
+                  user ID.
+                </p>
+              </section>
+            ) : (
+              <section className="admin-users-list">
+                {filteredUsers.map(user => (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                  />
+                ))}
+              </section>
+            )}
+          </>
+        )}
+      </main>
+    </>
   )
 }
 
-const boxStyle = {
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '18px',
-  padding: '22px',
-  marginBottom: '18px'
+function UserStatCard({ label, value }) {
+  return (
+    <article className="admin-user-stat-card">
+      <p>{label}</p>
+      <h2>{value}</h2>
+    </article>
+  )
 }
 
-const metaStyle = {
-  color: '#9CA3AF',
-  fontSize: '13px',
-  marginTop: '6px'
+function UserCard({ user }) {
+  const displayName =
+    user.display_name ||
+    user.email ||
+    'Unnamed User'
+
+  const initial = displayName
+    .trim()
+    .charAt(0)
+    .toUpperCase() || 'U'
+
+  return (
+    <article className="admin-user-card">
+      <div className="admin-user-avatar">
+        {user.avatar_url ? (
+          <img
+            src={user.avatar_url}
+            alt=""
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span>{initial}</span>
+        )}
+      </div>
+
+      <div className="admin-user-information">
+        <h2>{displayName}</h2>
+
+        <div className="admin-user-meta">
+          <p>
+            <strong>Email:</strong>{' '}
+            {user.email || 'Not available'}
+          </p>
+
+          <p>
+            <strong>Joined:</strong>{' '}
+            {user.created_at
+              ? new Date(user.created_at).toLocaleString()
+              : 'Unknown'}
+          </p>
+
+          <p className="admin-user-id">
+            <strong>User ID:</strong>{' '}
+            {user.id}
+          </p>
+        </div>
+      </div>
+    </article>
+  )
 }

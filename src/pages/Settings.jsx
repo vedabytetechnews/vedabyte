@@ -1,131 +1,143 @@
 import { useState } from 'react'
+
 import { useAuth } from '../context/AuthContext'
+import SEO from '../components/SEO'
 
 export default function Settings() {
   const { user } = useAuth()
 
-  const [newsletter, setNewsletter] =
-    useState(true)
+  const [newsletter, setNewsletter] = useState(true)
+  const [darkMode, setDarkMode] = useState(true)
 
-  const [darkMode, setDarkMode] =
-    useState(true)
+  function handleDeleteAccount() {
+    alert(
+      'Account deletion is not connected yet. We will add the secure deletion flow later.'
+    )
+  }
 
   return (
-    <div
-      style={{
-        maxWidth: '1000px',
-        margin: '0 auto',
-        padding: '40px 20px',
-        color: '#fff'
-      }}
-    >
-      <h1
-        style={{
-          color: '#D4AF37',
-          marginBottom: '30px'
-        }}
-      >
-        Account Settings
-      </h1>
+    <>
+      <SEO
+        title="VedaByte Account Settings"
+        description="Manage your VedaByte account preferences, newsletter settings and theme."
+        url="https://vedabyte-delta.vercel.app/settings"
+      />
 
-      <div
-        style={{
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '20px',
-          padding: '25px',
-          marginBottom: '25px'
-        }}
-      >
-        <h3>Email</h3>
+      <main className="settings-page">
+        <header className="settings-header">
+          <p className="settings-label">
+            VEDABYTE ACCOUNT
+          </p>
 
-        <p
-          style={{
-            color: '#9CA3AF'
-          }}
-        >
-          {user?.email}
-        </p>
-      </div>
+          <h1 className="settings-title">
+            Account Settings
+          </h1>
 
-      <div
-        style={{
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '20px',
-          padding: '25px',
-          marginBottom: '25px'
-        }}
-      >
-        <h3>Newsletter</h3>
+          <p className="settings-subtitle">
+            Manage your account preferences, notifications and appearance.
+          </p>
+        </header>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={newsletter}
-            onChange={() =>
-              setNewsletter(!newsletter)
-            }
-          />
-          {' '}
-          Receive technology updates
-        </label>
-      </div>
+        <section className="settings-card">
+          <div className="settings-card-content">
+            <div>
+              <h2 className="settings-card-title">Email</h2>
 
-      <div
-        style={{
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '20px',
-          padding: '25px',
-          marginBottom: '25px'
-        }}
-      >
-        <h3>Theme</h3>
+              <p className="settings-card-description">
+                The email connected to your VedaByte account.
+              </p>
+            </div>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={darkMode}
-            onChange={() =>
-              setDarkMode(!darkMode)
-            }
-          />
-          {' '}
-          Dark Mode
-        </label>
-      </div>
+            <p className="settings-email">
+              {user?.email || 'No email available'}
+            </p>
+          </div>
+        </section>
 
-      <div
-        style={{
-          background: '#111111',
-          border: '1px solid #7f1d1d',
-          borderRadius: '20px',
-          padding: '25px'
-        }}
-      >
-        <h3
-          style={{
-            color: '#ef4444'
-          }}
-        >
-          Danger Zone
-        </h3>
+        <section className="settings-card">
+          <div className="settings-card-content">
+            <div>
+              <h2 className="settings-card-title">
+                Newsletter
+              </h2>
 
-        <button
-          style={{
-            marginTop: '15px',
-            background: '#dc2626',
-            color: '#fff',
-            border: 'none',
-            padding: '12px 20px',
-            borderRadius: '10px',
-            cursor: 'pointer'
-          }}
-        >
-          Delete Account
-        </button>
-      </div>
-    </div>
+              <p className="settings-card-description">
+                Receive technology updates, weekly briefs and important
+                VedaByte announcements.
+              </p>
+            </div>
+
+            <label className="settings-toggle-row">
+              <span>
+                {newsletter ? 'Enabled' : 'Disabled'}
+              </span>
+
+              <input
+                type="checkbox"
+                checked={newsletter}
+                onChange={() => {
+                  setNewsletter(current => !current)
+                }}
+                aria-label="Receive technology updates"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="settings-card">
+          <div className="settings-card-content">
+            <div>
+              <h2 className="settings-card-title">
+                Theme
+              </h2>
+
+              <p className="settings-card-description">
+                Control the appearance of your VedaByte experience.
+              </p>
+            </div>
+
+            <label className="settings-toggle-row">
+              <span>
+                {darkMode ? 'Dark Mode' : 'Light Mode'}
+              </span>
+
+              <input
+                type="checkbox"
+                checked={darkMode}
+                onChange={() => {
+                  setDarkMode(current => !current)
+                }}
+                aria-label="Use dark mode"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="settings-danger-card">
+          <div>
+            <p className="settings-danger-label">
+              DANGER ZONE
+            </p>
+
+            <h2 className="settings-danger-title">
+              Delete Account
+            </h2>
+
+            <p className="settings-card-description">
+              Permanently remove your VedaByte account and associated
+              profile data. This action cannot be undone.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="settings-delete-button"
+            onClick={handleDeleteAccount}
+          >
+            Delete Account
+          </button>
+        </section>
+      </main>
+    </>
   )
 }

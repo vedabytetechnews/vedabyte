@@ -57,14 +57,14 @@ export default function Category() {
       }}
     >
       <div
-        style={{
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '24px',
-          padding: '35px',
-          marginBottom: '40px'
-        }}
-      >
+  className="category-hero"
+  style={{
+    background: '#111111',
+    border: '1px solid #232323',
+    borderRadius: '24px',
+    marginBottom: '40px'
+  }}
+>
         <span
           style={{
             color: '#D4AF37',
@@ -80,7 +80,7 @@ export default function Category() {
           style={{
             color: '#FFFFFF',
             marginTop: '10px',
-            fontSize: '52px',
+            fontSize: 'clamp(32px, 6vw, 52px)',
             textTransform: 'capitalize',
             lineHeight: '1.1'
           }}
@@ -167,16 +167,12 @@ export default function Category() {
               alt={featuredArticle.title}
               style={{
                 width: '100%',
-                height: '420px',
+                height: 'clamp(240px, 40vw, 420px)',
                 objectFit: 'cover'
               }}
             />
 
-            <div
-              style={{
-                padding: '30px'
-              }}
-            >
+            <div className="category-featured">
               <span
                 style={{
                   color: '#D4AF37',
@@ -191,7 +187,7 @@ export default function Category() {
                 style={{
                   color: '#FFFFFF',
                   marginTop: '15px',
-                  fontSize: '36px',
+                  fontSize: 'clamp(26px,5vw,36px)',
                   lineHeight: '1.2'
                 }}
               >
@@ -236,7 +232,7 @@ export default function Category() {
             style={{
               display: 'grid',
               gridTemplateColumns:
-                'repeat(auto-fit,minmax(320px,1fr))',
+'repeat(auto-fit,minmax(min(100%,300px),1fr))',
               gap: '25px'
             }}
           >

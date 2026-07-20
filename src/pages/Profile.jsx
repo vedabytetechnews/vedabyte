@@ -1,212 +1,296 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+
 import { useAuth } from '../context/AuthContext'
 import { getProfileStats } from '../services/profileService'
 import useSubscription from '../hooks/useSubscription'
+import LoadingScreen from '../components/LoadingScreen'
+import SEO from '../components/SEO'
 
 export default function Profile() {
   const { user, isAuthenticated } = useAuth()
-  const { isPro } = useSubscription()
+  const { loading: subscriptionLoading, isPro } = useSubscription()
+
   const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    async function loadProfile() {
-      if (!user) return
+    let isMounted = true
 
-      const data = await getProfileStats(user.id)
-      setStats(data)
+    async function loadProfile() {
+      if (!user) {
+        if (isMounted) {
+          setStats(null)
+          setLoading(false)
+        }
+
+        return
+      }
+
+      try {
+        if (isMounted) {
+          setLoading(true)
+          setError('')
+        }
+
+        const data = await getProfileStats(user.id)
+
+        if (isMounted) {
+          setStats(data)
+        }
+      } catch (profileError) {
+        console.error('Profile loading failed:', profileError)
+
+        if (isMounted) {
+          setError('Unable to load your profile activity right now.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
     }
 
     loadProfile()
+
+    return () => {
+      isMounted = false
+    }
   }, [user])
 
-  if (!isAuthenticated) {
+  if (loading || subscriptionLoading) {
+    return <LoadingScreen message="Loading your profile..." />
+  }
+
+  if (!isAuthenticated || !user) {
     return (
-      <div style={{ color: '#fff', padding: '50px 20px' }}>
-        Please sign in to view your profile.
-      </div>
+      <>
+        <SEO
+          title="VedaByte Profile"
+          description="Sign in to view your VedaByte profile and activity."
+          url="https://vedabyte-delta.vercel.app/profile"
+        />
+
+        <main className="profile-page profile-access-page">
+          <section className="profile-access-card">
+            <p className="profile-label">VEDABYTE ACCOUNT</p>
+
+            <h1 className="profile-title">Your Profile</h1>
+
+            <p className="profile-text">
+              Sign in to view your account details, saved activity and
+              membership status.
+            </p>
+          </section>
+        </main>
+      </>
     )
   }
 
-  if (!stats) {
-    return (
-      <div style={{ color: '#fff', padding: '50px 20px' }}>
-        Loading profile...
-      </div>
-    )
+  const safeStats = {
+    bookmarks: Number(stats?.bookmarks || 0),
+    likes: Number(stats?.likes || 0),
+    comments: Number(stats?.comments || 0)
   }
 
-  const name = user?.user_metadata?.full_name || 'VedaByte User'
-  const email = user?.email
-  const avatar = user?.user_metadata?.avatar_url
+  const name =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    'VedaByte User'
+
+  const email = user?.email || 'No email available'
+
+  const avatar =
+    user?.user_metadata?.avatar_url ||
+    user?.user_metadata?.picture ||
+    null
 
   const totalEngagement =
-    stats.bookmarks +
-    stats.likes +
-    stats.comments
+    safeStats.bookmarks +
+    safeStats.likes +
+    safeStats.comments
+
+  const memberSince = formatMemberDate(user?.created_at)
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '45px 20px', color: '#fff' }}>
-      <div style={profileBoxStyle}>
-        <div style={avatarStyle}>
-          {avatar ? (
-            <img
-              src={avatar}
-              alt={name}
-              referrerPolicy="no-referrer"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            name[0]
-          )}
-        </div>
+    <>
+      <SEO
+        title={`${name} | VedaByte Profile`}
+        description="View your VedaByte profile, activity and membership status."
+        url="https://vedabyte-delta.vercel.app/profile"
+      />
 
-        <div>
-          <h1 style={{ color: '#D4AF37', fontSize: '38px', marginBottom: '8px' }}>
-            {name}
-          </h1>
-
-          <p style={{ color: '#9CA3AF' }}>{email}</p>
-
-          <p style={{ color: '#6B7280', marginTop: '8px' }}>
-            Member Since:{' '}
-            {user?.created_at
-              ? new Date(user.created_at).toLocaleDateString()
-              : 'Unknown'}
-          </p>
-
-          <div style={isPro ? proBadgeStyle : freeBadgeStyle}>
-            {isPro ? '⭐ Pro Member' : 'Free Member'}
+      <main className="profile-page">
+        <section className="profile-hero">
+          <div className="profile-avatar">
+            {avatar ? (
+              <img
+                src={avatar}
+                alt={`${name} profile`}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              name.charAt(0).toUpperCase()
+            )}
           </div>
-        </div>
-      </div>
 
-      <h2 style={{ color: '#D4AF37', marginBottom: '20px' }}>
-        Your Activity
-      </h2>
+          <div className="profile-identity">
+            <p className="profile-label">VEDABYTE ACCOUNT</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '24px' }}>
-        <div style={cardStyle}>
-          <p style={labelStyle}>Bookmarks</p>
-          <h3 style={numberStyle}>{stats.bookmarks}</h3>
-        </div>
+            <h1 className="profile-name">{name}</h1>
 
-        <div style={cardStyle}>
-          <p style={labelStyle}>Likes</p>
-          <h3 style={numberStyle}>{stats.likes}</h3>
-        </div>
+            <p className="profile-email">{email}</p>
 
-        <div style={cardStyle}>
-          <p style={labelStyle}>Comments</p>
-          <h3 style={numberStyle}>{stats.comments}</h3>
-        </div>
-      </div>
+            <p className="profile-member-date">
+              Member Since: {memberSince}
+            </p>
 
-      <div style={overviewStyle}>
-        <h3 style={{ color: '#D4AF37', marginBottom: '20px' }}>
-          Account Overview
-        </h3>
+            <div
+              className={
+                isPro
+                  ? 'profile-badge pro'
+                  : 'profile-badge free'
+              }
+            >
+              {isPro ? '⭐ Pro Member' : 'Free Member'}
+            </div>
+          </div>
+        </section>
 
-        <p style={{ color: '#D1D5DB' }}>
-          Total Engagement: <strong>{totalEngagement}</strong>
-        </p>
+        <section className="profile-activity-section">
+          <h2 className="profile-section-title">
+            Your Activity
+          </h2>
 
-        <p style={{ color: '#9CA3AF', marginTop: '12px' }}>
-          User ID: {user.id.slice(0, 12)}...
-        </p>
+          {error ? (
+            <div className="profile-error-card">
+              <h3>Activity unavailable</h3>
+              <p>{error}</p>
+            </div>
+          ) : (
+            <div className="profile-stats-grid">
+              <StatCard
+                label="Bookmarks"
+                value={safeStats.bookmarks}
+              />
 
-        <p style={{ color: '#9CA3AF', marginTop: '12px' }}>
-          Account Type: {isPro ? 'Pro Member' : 'Free Member'}
-        </p>
+              <StatCard
+                label="Likes"
+                value={safeStats.likes}
+              />
 
-        {!isPro && (
-          <Link to="/pricing" style={upgradeStyle}>
-            Upgrade to Premium
-          </Link>
-        )}
-      </div>
+              <StatCard
+                label="Comments"
+                value={safeStats.comments}
+              />
+            </div>
+          )}
+        </section>
+
+        <section className="profile-overview">
+          <h2 className="profile-section-title">
+            Account Overview
+          </h2>
+
+          <div className="profile-overview-list">
+            <OverviewRow
+              label="Total Engagement"
+              value={totalEngagement}
+            />
+
+            <OverviewRow
+              label="User ID"
+              value={`${user.id.slice(0, 12)}...`}
+              code
+            />
+
+            <OverviewRow
+              label="Account Type"
+              value={isPro ? 'Pro Member' : 'Free Member'}
+              gold={isPro}
+            />
+          </div>
+
+          <div className="profile-actions">
+            <Link
+              to="/membership"
+              className="profile-secondary-button"
+            >
+              View Membership
+            </Link>
+
+            <Link
+              to="/settings"
+              className="profile-secondary-button"
+            >
+              Account Settings
+            </Link>
+
+            {!isPro && (
+              <Link
+                to="/pricing"
+                className="profile-primary-button"
+              >
+                Upgrade to Premium
+              </Link>
+            )}
+          </div>
+        </section>
+      </main>
+    </>
+  )
+}
+
+function StatCard({ label, value }) {
+  return (
+    <article className="profile-stat-card">
+      <p>{label}</p>
+      <h3>{value}</h3>
+    </article>
+  )
+}
+
+function OverviewRow({
+  label,
+  value,
+  gold = false,
+  code = false
+}) {
+  return (
+    <div className="profile-overview-row">
+      <span>{label}</span>
+
+      <strong
+        className={[
+          gold ? 'gold' : '',
+          code ? 'code' : ''
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {value}
+      </strong>
     </div>
   )
 }
 
-const profileBoxStyle = {
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '24px',
-  padding: '35px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '25px',
-  flexWrap: 'wrap',
-  marginBottom: '35px'
-}
+function formatMemberDate(dateValue) {
+  if (!dateValue) {
+    return 'Unknown'
+  }
 
-const avatarStyle = {
-  width: '90px',
-  height: '90px',
-  borderRadius: '22px',
-  background: '#D4AF37',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  overflow: 'hidden',
-  color: '#000',
-  fontSize: '36px',
-  fontWeight: '900'
-}
+  const date = new Date(dateValue)
 
-const cardStyle = {
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '20px',
-  padding: '28px'
-}
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown'
+  }
 
-const labelStyle = {
-  color: '#9CA3AF',
-  marginBottom: '12px'
-}
-
-const numberStyle = {
-  color: '#FFFFFF',
-  fontSize: '42px'
-}
-
-const overviewStyle = {
-  marginTop: '35px',
-  background: '#111111',
-  border: '1px solid #232323',
-  borderRadius: '20px',
-  padding: '30px'
-}
-
-const upgradeStyle = {
-  display: 'inline-block',
-  marginTop: '18px',
-  background: '#D4AF37',
-  color: '#000',
-  padding: '12px 18px',
-  borderRadius: '10px',
-  fontWeight: '900',
-  textDecoration: 'none'
-}
-
-const proBadgeStyle = {
-  display: 'inline-block',
-  marginTop: '14px',
-  background: '#D4AF37',
-  color: '#000',
-  padding: '8px 12px',
-  borderRadius: '999px',
-  fontWeight: '900'
-}
-
-const freeBadgeStyle = {
-  display: 'inline-block',
-  marginTop: '14px',
-  background: '#232323',
-  color: '#D1D5DB',
-  padding: '8px 12px',
-  borderRadius: '999px',
-  fontWeight: '800'
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
 }

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 import DashboardHero from '../components/premium/DashboardHero'
 import WeeklyBriefCard from '../components/premium/WeeklyBriefCard'
 import LatestPremiumArticles from '../components/premium/LatestPremiumArticles'
@@ -7,121 +9,190 @@ import SubscriptionSettings from '../components/premium/SubscriptionSettings'
 import PaymentHistory from '../components/premium/PaymentHistory'
 import ContinueReading from '../components/premium/ContinueReading'
 import ReadingHistory from '../components/premium/ReadingHistory'
-import { Link } from 'react-router-dom'
+import LoadingScreen from '../components/LoadingScreen'
+import SEO from '../components/SEO'
+
 import { useAuth } from '../context/AuthContext'
 import useSubscription from '../hooks/useSubscription'
 
 export default function Premium() {
-  const { user } = useAuth()
-const { isPro, subscription } = useSubscription()
+  const { user, isAuthenticated } = useAuth()
+
+  const {
+    loading,
+    isPro,
+    subscription
+  } = useSubscription()
+
+  if (loading) {
+    return <LoadingScreen message="Checking Premium access..." />
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <>
+        <SEO
+          title="VedaByte Premium"
+          description="Sign in to access VedaByte Premium intelligence, reports and weekly briefs."
+          url="https://vedabyte-delta.vercel.app/premium"
+        />
+
+        <main className="premium-access-page">
+          <section className="premium-access-card">
+            <p className="premium-access-label">
+              VEDABYTE PREMIUM
+            </p>
+
+            <h1 className="premium-access-title">
+              Sign in to continue
+            </h1>
+
+            <p className="premium-access-text">
+              Sign in to view your membership status and access
+              VedaByte Premium.
+            </p>
+
+            <div className="premium-access-actions">
+              <Link
+                to="/profile"
+                className="premium-primary-button"
+              >
+                Sign In
+              </Link>
+            </div>
+          </section>
+        </main>
+      </>
+    )
+  }
+
+  if (!isPro) {
+    return (
+      <>
+        <SEO
+          title="Upgrade to VedaByte Premium"
+          description="Upgrade your VedaByte membership to access premium articles, weekly briefs and exclusive reports."
+          url="https://vedabyte-delta.vercel.app/premium"
+        />
+
+        <main className="premium-access-page">
+          <section className="premium-access-card">
+            <p className="premium-access-label">
+              VEDABYTE PREMIUM
+            </p>
+
+            <h1 className="premium-access-title">
+              Premium access required
+            </h1>
+
+            <p className="premium-access-text">
+              Upgrade your VedaByte membership to unlock premium
+              articles, weekly intelligence briefs, reading insights
+              and exclusive reports.
+            </p>
+
+            <div className="premium-access-actions">
+              <Link
+                to="/pricing"
+                className="premium-primary-button"
+              >
+                View Premium Plans
+              </Link>
+
+              <Link
+                to="/membership"
+                className="premium-secondary-button"
+              >
+                View Membership
+              </Link>
+            </div>
+          </section>
+        </main>
+      </>
+    )
+  }
+
+  const memberName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split('@')[0] ||
+    'VedaByte member'
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#050505',
-        color: '#fff',
-        padding: '150px 20px 80px'
-      }}
-    >
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        <DashboardHero />
+    <>
+      <SEO
+        title="VedaByte Premium Dashboard"
+        description="Access your VedaByte Premium articles, weekly intelligence briefs and reading insights."
+        url="https://vedabyte-delta.vercel.app/premium"
+      />
 
-        <div style={membershipCardStyle}>
-  <div>
-    <p style={membershipLabelStyle}>MEMBERSHIP STATUS</p>
+      <main className="premium-page">
+        <div className="premium-container">
+          <DashboardHero />
 
-    <h2 style={membershipTitleStyle}>
-      {isPro ? 'Premium Active' : 'Free Plan'}
-    </h2>
+          <section className="premium-membership-card">
+            <div className="premium-membership-content">
+              <p className="premium-membership-label">
+                MEMBERSHIP STATUS
+              </p>
 
-    <p style={membershipTextStyle}>
-      {isPro
-        ? `Welcome ${user?.user_metadata?.full_name || 'VedaByte member'}. Your premium access is active.`
-        : 'Upgrade to unlock premium intelligence features.'}
-    </p>
-  </div>
+              <h2 className="premium-membership-title">
+                Premium Active
+              </h2>
 
-  <Link to="/membership" style={membershipButtonStyle}>
-    View Membership
-  </Link>
-</div>
+              <p className="premium-membership-text">
+                Welcome {memberName}. Your premium access is active.
+              </p>
 
-        <div style={mainGridStyle}>
-          <div style={leftColumnStyle}>
-            <WeeklyBriefCard />
-            <LatestPremiumArticles />
-            <SavedPremiumArticles />
-            <ContinueReading />
-            <ReadingHistory />
-          </div>
+              {subscription?.expires_at && (
+                <p className="premium-expiry-text">
+                  Access valid until{' '}
+                  <strong>
+                    {formatExpiryDate(subscription.expires_at)}
+                  </strong>
+                </p>
+              )}
+            </div>
 
-          <div style={rightColumnStyle}>
-            <ReadingStats />
-            <SubscriptionSettings />
-            <PaymentHistory />
+            <Link
+              to="/membership"
+              className="premium-membership-button"
+            >
+              View Membership
+            </Link>
+          </section>
+
+          <div className="premium-dashboard-grid">
+            <section className="premium-left-column">
+              <WeeklyBriefCard />
+              <LatestPremiumArticles />
+              <SavedPremiumArticles />
+              <ContinueReading />
+              <ReadingHistory />
+            </section>
+
+            <aside className="premium-right-column">
+              <ReadingStats />
+              <SubscriptionSettings />
+              <PaymentHistory />
+            </aside>
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   )
 }
 
-const mainGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1.6fr) minmax(320px, 0.9fr)',
-  gap: '30px',
-  marginTop: '30px'
-}
+function formatExpiryDate(dateValue) {
+  const date = new Date(dateValue)
 
-const leftColumnStyle = {
-  display: 'grid',
-  gap: '30px',
-  alignContent: 'start'
-}
+  if (Number.isNaN(date.getTime())) {
+    return 'Not available'
+  }
 
-const rightColumnStyle = {
-  display: 'grid',
-  gap: '30px',
-  alignContent: 'start'
-}
-
-const membershipCardStyle = {
-  background: 'linear-gradient(145deg, #111111, #070707)',
-  border: '1px solid rgba(212,175,55,0.35)',
-  borderRadius: '22px',
-  padding: '26px',
-  marginBottom: '28px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '20px',
-  flexWrap: 'wrap'
-}
-
-const membershipLabelStyle = {
-  color: '#D4AF37',
-  letterSpacing: '.25em',
-  fontSize: '11px',
-  fontWeight: '900',
-  marginBottom: '10px'
-}
-
-const membershipTitleStyle = {
-  color: '#fff',
-  fontSize: '30px',
-  margin: 0
-}
-
-const membershipTextStyle = {
-  color: '#9CA3AF',
-  marginTop: '10px'
-}
-
-const membershipButtonStyle = {
-  background: 'linear-gradient(135deg,#D4AF37,#FFE08A)',
-  color: '#000',
-  padding: '13px 22px',
-  borderRadius: '999px',
-  fontWeight: '900',
-  textDecoration: 'none'
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
 }

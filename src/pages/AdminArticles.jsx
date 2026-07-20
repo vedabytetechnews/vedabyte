@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   getAdminArticles,
   toggleFeaturedArticle,
@@ -6,72 +6,114 @@ import {
   updateAdminArticle
 } from '../services/articleAdminService'
 
+import LoadingScreen from '../components/LoadingScreen'
+import SEO from '../components/SEO'
+
+const EMPTY_FORM = {
+  title: '',
+  category: 'AI',
+  description: '',
+  image: ''
+}
+
 export default function AdminArticles() {
   const [articles, setArticles] = useState([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [editingArticle, setEditingArticle] = useState(null)
-  const [form, setForm] = useState({
-    title: '',
-    category: '',
-    description: '',
-    image: ''
-  })
-  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    loadArticles()
-  }, [])
+    let isMounted = true
 
-  async function loadArticles() {
-    const data = await getAdminArticles()
-    setArticles(data)
-    setLoading(false)
-  }
+    async function loadArticles() {
+      try {
+        const data = await getAdminArticles()
+
+        if (isMounted) {
+          setArticles(Array.isArray(data) ? data : [])
+        }
+      } catch (loadError) {
+        console.error('Unable to load admin articles:', loadError)
+
+        if (isMounted) {
+          setError('Unable to load articles right now.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadArticles()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   function handleFeature(articleId) {
     const isNowFeatured = toggleFeaturedArticle(articleId)
 
-    setArticles(prev =>
-      prev.map(article => ({
+    setArticles(previousArticles =>
+      previousArticles.map(article => ({
         ...article,
-        featured: isNowFeatured && article.id === articleId
+        featured:
+          article.id === articleId
+            ? isNowFeatured
+            : false
       }))
     )
   }
 
   function handleDelete(articleId) {
     const confirmDelete = window.confirm(
-      'Are you sure you want to delete this article from admin view?'
+      'Are you sure you want to delete this article from the admin view?'
     )
 
     if (!confirmDelete) return
 
     deleteAdminArticle(articleId)
 
-    setArticles(prev =>
-      prev.filter(article => article.id !== articleId)
+    setArticles(previousArticles =>
+      previousArticles.filter(article => article.id !== articleId)
     )
+
+    if (editingArticle?.id === articleId) {
+      cancelEditing()
+    }
   }
 
   function startEditing(article) {
     setEditingArticle(article)
+
     setForm({
-      title: article.title,
-      category: article.category,
-      description: article.description,
-      image: article.image
+      title: article.title || '',
+      category: article.category || 'AI',
+      description: article.description || '',
+      image: article.image || ''
+    })
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
     })
   }
 
   function cancelEditing() {
     setEditingArticle(null)
-    setForm({
-      title: '',
-      category: '',
-      description: '',
-      image: ''
-    })
+    setForm(EMPTY_FORM)
+  }
+
+  function handleInputChange(event) {
+    const { name, value } = event.target
+
+    setForm(previousForm => ({
+      ...previousForm,
+      [name]: value
+    }))
   }
 
   function handleSaveEdit(event) {
@@ -86,10 +128,19 @@ export default function AdminArticles() {
       image: form.image.trim()
     }
 
+    if (
+      !updates.title ||
+      !updates.category ||
+      !updates.description ||
+      !updates.image
+    ) {
+      return
+    }
+
     updateAdminArticle(editingArticle.id, updates)
 
-    setArticles(prev =>
-      prev.map(article =>
+    setArticles(previousArticles =>
+      previousArticles.map(article =>
         article.id === editingArticle.id
           ? { ...article, ...updates }
           : article
@@ -99,295 +150,352 @@ export default function AdminArticles() {
     cancelEditing()
   }
 
-  const cleanQuery = query.trim().toLowerCase()
+  const filteredArticles = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase()
 
-  const filteredArticles = articles.filter(article =>
-    article.title.toLowerCase().includes(cleanQuery) ||
-    article.category.toLowerCase().includes(cleanQuery) ||
-    article.description.toLowerCase().includes(cleanQuery)
+    if (!cleanQuery) {
+      return articles
+    }
+
+    return articles.filter(article => {
+      const title = String(article.title || '').toLowerCase()
+      const category = String(article.category || '').toLowerCase()
+      const description = String(article.description || '').toLowerCase()
+      const articleId = String(article.id || '').toLowerCase()
+
+      return (
+        title.includes(cleanQuery) ||
+        category.includes(cleanQuery) ||
+        description.includes(cleanQuery) ||
+        articleId.includes(cleanQuery)
+      )
+    })
+  }, [articles, query])
+
+  const featuredCount = articles.filter(
+    article => article.featured
+  ).length
+
+  const totalLikes = articles.reduce(
+    (sum, article) => sum + Number(article.likes || 0),
+    0
   )
 
-  const featuredCount = articles.filter(article => article.featured).length
-  const totalLikes = articles.reduce((sum, article) => sum + article.likes, 0)
-  const totalComments = articles.reduce((sum, article) => sum + article.comments, 0)
+  const totalComments = articles.reduce(
+    (sum, article) => sum + Number(article.comments || 0),
+    0
+  )
 
   if (loading) {
-    return (
-      <div style={{ color: '#fff', padding: '50px 20px' }}>
-        Loading articles...
-      </div>
-    )
+    return <LoadingScreen message="Loading articles..." />
   }
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '45px 20px', color: '#fff' }}>
-      <h1 style={{ color: '#D4AF37', fontSize: '42px', marginBottom: '10px' }}>
-        Article Management
-      </h1>
-
-      <p style={{ color: '#9CA3AF', marginBottom: '30px' }}>
-        Review, feature, edit and manage local VedaByte articles.
-      </p>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px', marginBottom: '30px' }}>
-        <StatCard label="Total Articles" value={articles.length} />
-        <StatCard label="Featured" value={featuredCount} />
-        <StatCard label="Total Likes" value={totalLikes} />
-        <StatCard label="Total Comments" value={totalComments} />
-      </div>
-
-      <input
-        type="text"
-        placeholder="Search articles..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={inputStyle}
+    <>
+      <SEO
+        title="Article Management | VedaByte Admin"
+        description="Manage, edit, feature and remove VedaByte articles."
+        url="https://vedabyte-delta.vercel.app/admin/articles"
       />
 
-      {editingArticle && (
-        <form onSubmit={handleSaveEdit} style={editorStyle}>
-          <h2 style={{ color: '#D4AF37', marginBottom: '18px' }}>
-            Edit Article
-          </h2>
+      <main className="admin-articles-page">
+        <header className="admin-articles-header">
+          <p className="admin-articles-label">
+            CONTENT MANAGEMENT
+          </p>
 
-          <label style={labelStyle}>Title</label>
-          <button
-  onClick={() => {
-    setCreating(true)
-    setEditingArticle(null)
+          <h1>Article Management</h1>
 
-    setForm({
-      title: '',
-      category: 'AI',
-      description: '',
-      image: ''
-    })
-  }}
-  style={{
-    background: '#D4AF37',
-    color: '#000',
-    border: 'none',
-    padding: '12px 18px',
-    borderRadius: '10px',
-    fontWeight: '900',
-    cursor: 'pointer',
-    marginBottom: '25px'
-  }}
->
-  + Create New Article
-</button>
-          <input
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            style={inputStyle}
-            required
-          />
+          <p>
+            Review, feature, edit and manage local VedaByte articles.
+          </p>
+        </header>
 
-          <label style={labelStyle}>Category</label>
-          <select
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            style={inputStyle}
-            required
-          >
-            <option value="AI">AI</option>
-            <option value="Startups">Startups</option>
-            <option value="Security">Security</option>
-            <option value="Programming">Programming</option>
-            <option value="Cloud">Cloud</option>
-            <option value="Gadgets">Gadgets</option>
-          </select>
+        {error ? (
+          <section className="admin-articles-error">
+            <h2>Articles unavailable</h2>
+            <p>{error}</p>
+          </section>
+        ) : (
+          <>
+            <section
+              className="admin-article-stats-grid"
+              aria-label="Article statistics"
+            >
+              <StatCard
+                label="Total Articles"
+                value={articles.length}
+              />
 
-          <label style={labelStyle}>Description</label>
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
-            required
-          />
+              <StatCard
+                label="Featured"
+                value={featuredCount}
+              />
 
-          <label style={labelStyle}>Image URL</label>
-          <input
-            value={form.image}
-            onChange={(e) => setForm({ ...form, image: e.target.value })}
-            style={inputStyle}
-            required
-          />
+              <StatCard
+                label="Total Likes"
+                value={totalLikes}
+              />
 
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button type="submit" style={primaryButtonStyle}>
-              Save Changes
-            </button>
+              <StatCard
+                label="Total Comments"
+                value={totalComments}
+              />
+            </section>
 
-            <button type="button" onClick={cancelEditing} style={secondaryButtonStyle}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+            <section className="admin-article-toolbar">
+              <label
+                htmlFor="admin-article-search"
+                className="admin-article-search-label"
+              >
+                Search articles
+              </label>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '24px' }}>
-        {filteredArticles.map(article => (
-          <div
-            key={article.id}
-            style={{
-              background: '#111111',
-              border: article.featured ? '1px solid #D4AF37' : '1px solid #232323',
-              borderRadius: '18px',
-              overflow: 'hidden'
-            }}
-          >
-            <img src={article.image} alt={article.title} style={{ width: '100%', height: '190px', objectFit: 'cover' }} />
+              <input
+                id="admin-article-search"
+                type="search"
+                placeholder="Search by title, category, description or ID..."
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                className="admin-article-input"
+              />
 
-            <div style={{ padding: '20px' }}>
-              <span style={{ color: '#D4AF37', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase' }}>
-                {article.category}
-              </span>
-
-              {article.featured && (
-                <span style={featuredBadgeStyle}>
-                  FEATURED
-                </span>
-              )}
-
-              <h3 style={{ color: '#fff', marginTop: '10px', lineHeight: '1.4' }}>
-                {article.title}
-              </h3>
-
-              <p style={{ color: '#9CA3AF', fontSize: '14px', marginTop: '12px', lineHeight: '1.6' }}>
-                {article.description}
+              <p className="admin-article-results-count">
+                Showing {filteredArticles.length} of {articles.length}{' '}
+                articles
               </p>
+            </section>
 
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '18px', color: '#D1D5DB', fontSize: '14px' }}>
-                <span>❤️ {article.likes}</span>
-                <span>💬 {article.comments}</span>
-                <span>ID: {article.id}</span>
-              </div>
+            {editingArticle && (
+              <form
+                onSubmit={handleSaveEdit}
+                className="admin-article-editor"
+              >
+                <div className="admin-article-editor-heading">
+                  <div>
+                    <p>EDITING ARTICLE</p>
+                    <h2>{editingArticle.title}</h2>
+                  </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
-                <button
-                  onClick={() => handleFeature(article.id)}
-                  style={{
-                    flex: 1,
-                    background: article.featured ? '#232323' : '#D4AF37',
-                    color: article.featured ? '#fff' : '#000',
-                    border: 'none',
-                    padding: '11px',
-                    borderRadius: '10px',
-                    fontWeight: '900',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {article.featured ? 'Unfeature' : 'Feature'}
-                </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="admin-article-close-button"
+                    aria-label="Close article editor"
+                  >
+                    ×
+                  </button>
+                </div>
 
-                <button
-                  onClick={() => startEditing(article)}
-                  style={editButtonStyle}
-                >
-                  Edit
-                </button>
+                <div className="admin-article-form-grid">
+                  <div className="admin-article-field admin-article-field-wide">
+                    <label htmlFor="article-title">
+                      Title
+                    </label>
 
-                <button
-                  onClick={() => handleDelete(article.id)}
-                  style={deleteButtonStyle}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+                    <input
+                      id="article-title"
+                      name="title"
+                      value={form.title}
+                      onChange={handleInputChange}
+                      className="admin-article-input"
+                      required
+                    />
+                  </div>
+
+                  <div className="admin-article-field">
+                    <label htmlFor="article-category">
+                      Category
+                    </label>
+
+                    <select
+                      id="article-category"
+                      name="category"
+                      value={form.category}
+                      onChange={handleInputChange}
+                      className="admin-article-input"
+                      required
+                    >
+                      <option value="AI">AI</option>
+                      <option value="Startups">Startups</option>
+                      <option value="Security">Security</option>
+                      <option value="Programming">
+                        Programming
+                      </option>
+                      <option value="Cloud">Cloud</option>
+                      <option value="Gadgets">Gadgets</option>
+                    </select>
+                  </div>
+
+                  <div className="admin-article-field">
+                    <label htmlFor="article-image">
+                      Image URL
+                    </label>
+
+                    <input
+                      id="article-image"
+                      name="image"
+                      type="url"
+                      value={form.image}
+                      onChange={handleInputChange}
+                      className="admin-article-input"
+                      required
+                    />
+                  </div>
+
+                  <div className="admin-article-field admin-article-field-wide">
+                    <label htmlFor="article-description">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="article-description"
+                      name="description"
+                      value={form.description}
+                      onChange={handleInputChange}
+                      className="admin-article-input admin-article-textarea"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-article-editor-actions">
+                  <button
+                    type="submit"
+                    className="admin-article-primary-button"
+                  >
+                    Save Changes
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="admin-article-secondary-button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {filteredArticles.length === 0 ? (
+              <section className="admin-articles-empty">
+                <h2>No articles found</h2>
+
+                <p>
+                  Try searching with a different title, category or
+                  article ID.
+                </p>
+              </section>
+            ) : (
+              <section className="admin-article-list-grid">
+                {filteredArticles.map(article => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    onFeature={handleFeature}
+                    onEdit={startEditing}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </section>
+            )}
+          </>
+        )}
+      </main>
+    </>
   )
 }
 
 function StatCard({ label, value }) {
   return (
-    <div style={{ background: '#111111', border: '1px solid #232323', borderRadius: '16px', padding: '20px' }}>
-      <p style={{ color: '#9CA3AF', fontSize: '14px' }}>{label}</p>
-      <h2 style={{ color: '#D4AF37', fontSize: '32px', marginTop: '8px' }}>
-        {value}
-      </h2>
-    </div>
+    <article className="admin-article-stat-card">
+      <p>{label}</p>
+      <h2>{value}</h2>
+    </article>
   )
 }
 
-const inputStyle = {
-  width: '100%',
-  background: '#111111',
-  border: '1px solid #232323',
-  color: '#fff',
-  padding: '14px 16px',
-  borderRadius: '12px',
-  marginBottom: '18px',
-  fontSize: '16px'
-}
+function ArticleCard({
+  article,
+  onFeature,
+  onEdit,
+  onDelete
+}) {
+  return (
+    <article
+      className={`admin-article-card ${
+        article.featured ? 'featured' : ''
+      }`}
+    >
+      <div className="admin-article-image-wrapper">
+        <img
+          src={article.image}
+          alt={article.title}
+          loading="lazy"
+          onError={event => {
+            event.currentTarget.src =
+              'https://placehold.co/800x450/111111/D4AF37?text=VedaByte'
+          }}
+        />
 
-const labelStyle = {
-  display: 'block',
-  color: '#D4AF37',
-  fontWeight: '800',
-  marginBottom: '8px'
-}
+        {article.featured && (
+          <span className="admin-article-featured-badge">
+            FEATURED
+          </span>
+        )}
+      </div>
 
-const editorStyle = {
-  background: '#111111',
-  border: '1px solid #D4AF37',
-  borderRadius: '18px',
-  padding: '24px',
-  marginBottom: '35px'
-}
+      <div className="admin-article-card-content">
+        <p className="admin-article-category">
+          {article.category}
+        </p>
 
-const primaryButtonStyle = {
-  background: '#D4AF37',
-  color: '#000',
-  border: 'none',
-  padding: '12px 18px',
-  borderRadius: '10px',
-  fontWeight: '900',
-  cursor: 'pointer'
-}
+        <h2>{article.title}</h2>
 
-const secondaryButtonStyle = {
-  background: '#232323',
-  color: '#fff',
-  border: 'none',
-  padding: '12px 18px',
-  borderRadius: '10px',
-  fontWeight: '900',
-  cursor: 'pointer'
-}
+        <p className="admin-article-description">
+          {article.description}
+        </p>
 
-const editButtonStyle = {
-  flex: 1,
-  background: '#1F2937',
-  color: '#fff',
-  border: 'none',
-  padding: '11px',
-  borderRadius: '10px',
-  fontWeight: '900',
-  cursor: 'pointer'
-}
+        <div className="admin-article-meta">
+          <span>❤️ {Number(article.likes || 0)}</span>
+          <span>💬 {Number(article.comments || 0)}</span>
+        </div>
 
-const deleteButtonStyle = {
-  flex: 1,
-  background: '#7F1D1D',
-  color: '#fff',
-  border: 'none',
-  padding: '11px',
-  borderRadius: '10px',
-  fontWeight: '900',
-  cursor: 'pointer'
-}
+        <p className="admin-article-id">
+          ID: {article.id}
+        </p>
 
-const featuredBadgeStyle = {
-  marginLeft: '10px',
-  background: '#D4AF37',
-  color: '#000',
-  fontSize: '11px',
-  fontWeight: '900',
-  padding: '4px 8px',
-  borderRadius: '999px'
+        <div className="admin-article-card-actions">
+          <button
+            type="button"
+            onClick={() => onFeature(article.id)}
+            className={
+              article.featured
+                ? 'admin-article-unfeature-button'
+                : 'admin-article-feature-button'
+            }
+          >
+            {article.featured ? 'Unfeature' : 'Feature'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onEdit(article)}
+            className="admin-article-edit-button"
+          >
+            Edit
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onDelete(article.id)}
+            className="admin-article-delete-button"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </article>
+  )
 }

@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+
 import { useAuth } from '../context/AuthContext'
 import { createOrder, verifyPayment } from '../services/paymentService'
-
 import {
   getUserSubscription,
   createFreeSubscription
 } from '../services/subscriptionService'
+import SEO from '../components/SEO'
 
 export default function Pricing() {
   const { user, isAuthenticated } = useAuth()
+
   const [subscription, setSubscription] = useState(null)
   const [loadingPlan, setLoadingPlan] = useState(null)
 
@@ -17,13 +19,17 @@ export default function Pricing() {
     async function loadSubscription() {
       if (!user) return
 
-      const existing = await getUserSubscription(user.id)
+      try {
+        const existing = await getUserSubscription(user.id)
 
-      if (existing) {
-        setSubscription(existing)
-      } else {
-        const created = await createFreeSubscription(user)
-        setSubscription(created)
+        if (existing) {
+          setSubscription(existing)
+        } else {
+          const created = await createFreeSubscription(user)
+          setSubscription(created)
+        }
+      } catch (error) {
+        console.error('Failed to load subscription:', error)
       }
     }
 
@@ -42,9 +48,9 @@ export default function Pricing() {
       setLoadingPlan(planKey)
 
       const order = await createOrder(planKey, {
-  id: user.id,
-  email: user.email
-})
+        id: user.id,
+        email: user.email
+      })
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -56,14 +62,20 @@ export default function Pricing() {
             ? 'Support VedaByte - 3 Months Premium'
             : 'VedaByte Premium Monthly',
         order_id: order.id,
+
         prefill: {
-          name: user?.user_metadata?.full_name || 'VedaByte User',
+          name:
+            user?.user_metadata?.full_name ||
+            user?.user_metadata?.name ||
+            'VedaByte User',
           email: user?.email
         },
+
         theme: {
           color: '#D4AF37'
         },
-        handler: async function (response) {
+
+        handler: async function handlePaymentSuccess(response) {
           try {
             const updated = await verifyPayment({
               user: {
@@ -85,14 +97,24 @@ export default function Pricing() {
             )
           } catch (error) {
             console.error(error)
-            alert('Payment completed, but verification failed. Please contact support.')
+
+            alert(
+              'Payment completed, but verification failed. Please contact support.'
+            )
+          } finally {
+            setLoadingPlan(null)
           }
         },
+
         modal: {
-          ondismiss: function () {
+          ondismiss() {
             setLoadingPlan(null)
           }
         }
+      }
+
+      if (!window.Razorpay) {
+        throw new Error('Razorpay checkout is not available.')
       }
 
       const razorpay = new window.Razorpay(options)
@@ -100,7 +122,6 @@ export default function Pricing() {
     } catch (error) {
       console.error(error)
       alert('Unable to start payment. Please try again.')
-    } finally {
       setLoadingPlan(null)
     }
   }
@@ -113,7 +134,8 @@ export default function Pricing() {
       key: 'free',
       price: '₹0',
       period: 'forever',
-      description: 'For casual readers who want daily technology updates.',
+      description:
+        'For casual readers who want daily technology updates.',
       features: [
         'Latest technology news',
         'AI, Startup and Cybersecurity categories',
@@ -129,7 +151,8 @@ export default function Pricing() {
       key: 'coffee',
       price: '₹149',
       period: 'one-time',
-      description: 'Support the project and unlock Premium for 3 months.',
+      description:
+        'Support the project and unlock Premium for 3 months.',
       features: [
         'Everything in Free',
         '3 months Premium included',
@@ -146,7 +169,8 @@ export default function Pricing() {
       key: 'pro',
       price: '₹99',
       period: 'per month',
-      description: 'For serious readers, builders, founders and tech teams.',
+      description:
+        'For serious readers, builders, founders and tech teams.',
       features: [
         'Everything in Free',
         'Unlimited intelligence summaries',
@@ -161,214 +185,119 @@ export default function Pricing() {
   ]
 
   return (
-    <div style={pageStyle}>
-      <div style={headerStyle}>
-        <p style={labelStyle}>VEDABYTE MEMBERSHIP</p>
+    <>
+      <SEO
+        title="VedaByte Premium Plans"
+        description="Choose a VedaByte membership plan for premium technology articles, intelligence summaries and weekly briefs."
+        url="https://vedabyte-delta.vercel.app/pricing"
+      />
 
-        <h1 style={titleStyle}>Choose Your VedaByte Plan</h1>
+      <main className="pricing-page">
+        <header className="pricing-header">
+          <p className="pricing-label">
+            VEDABYTE MEMBERSHIP
+          </p>
 
-        <p style={subtitleStyle}>
-          Read smarter technology news with intelligence summaries, premium
-          analysis, weekly briefs and exclusive reports.
-        </p>
+          <h1 className="pricing-title">
+            Choose Your VedaByte Plan
+          </h1>
 
-        {isAuthenticated && (
-          <p style={currentStyle}>
-            Current Plan:{' '}
-            <strong style={{ color: '#D4AF37', textTransform: 'capitalize' }}>
-              {currentPlan}
-            </strong>
+          <p className="pricing-subtitle">
+            Read smarter technology news with intelligence summaries,
+            premium analysis, weekly briefs and exclusive reports.
+          </p>
+
+          {isAuthenticated && (
+            <p className="pricing-current-plan">
+              Current Plan:{' '}
+              <strong>
+                {currentPlan}
+              </strong>
+            </p>
+          )}
+        </header>
+
+        <section
+          className="pricing-grid"
+          aria-label="VedaByte membership plans"
+        >
+          {plans.map(plan => {
+            const isCurrent = currentPlan === plan.key
+            const isLoading = loadingPlan === plan.key
+
+            return (
+              <article
+                key={plan.key}
+                className={`pricing-card${
+                  plan.highlighted ? ' highlighted' : ''
+                }`}
+              >
+                {plan.badge && (
+                  <div className="pricing-badge">
+                    {plan.badge}
+                  </div>
+                )}
+
+                <h2 className="pricing-plan-name">
+                  {plan.name}
+                </h2>
+
+                <div className="pricing-price-row">
+                  <span className="pricing-price">
+                    {plan.price}
+                  </span>
+
+                  <span className="pricing-period">
+                    /{plan.period}
+                  </span>
+                </div>
+
+                <p className="pricing-description">
+                  {plan.description}
+                </p>
+
+                <ul className="pricing-features">
+                  {plan.features.map(feature => (
+                    <li key={feature}>
+                      <span aria-hidden="true">✓</span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  disabled={isCurrent || isLoading}
+                  onClick={() => handleUpgrade(plan.key)}
+                  className={`pricing-button${
+                    plan.highlighted ? ' highlighted' : ''
+                  }${isCurrent ? ' current' : ''}`}
+                >
+                  {isLoading
+                    ? 'Opening Payment...'
+                    : isCurrent
+                      ? 'Current Plan'
+                      : plan.key === 'coffee'
+                        ? 'Support & Unlock'
+                        : plan.key === 'pro'
+                          ? 'Start Premium'
+                          : 'Current Plan'}
+                </button>
+              </article>
+            )
+          })}
+        </section>
+
+        {!isAuthenticated && (
+          <p className="pricing-signin">
+            Please{' '}
+            <Link to="/profile">
+              sign in
+            </Link>{' '}
+            before upgrading.
           </p>
         )}
-      </div>
-
-      <div style={gridStyle}>
-        {plans.map(plan => {
-          const isCurrent = currentPlan === plan.key
-          const isLoading = loadingPlan === plan.key
-
-          return (
-            <div
-              key={plan.key}
-              style={{
-                ...cardStyle,
-                border: plan.highlighted
-                  ? '1px solid rgba(212,175,55,0.7)'
-                  : '1px solid #232323',
-                boxShadow: plan.highlighted
-                  ? '0 0 35px rgba(212,175,55,0.18)'
-                  : 'none'
-              }}
-            >
-              {plan.badge && <div style={badgeStyle}>{plan.badge}</div>}
-
-              <h2 style={planNameStyle}>{plan.name}</h2>
-
-              <div style={priceRowStyle}>
-                <span style={priceStyle}>{plan.price}</span>
-                <span style={periodStyle}>/{plan.period}</span>
-              </div>
-
-              <p style={descriptionStyle}>{plan.description}</p>
-
-              <ul style={featureListStyle}>
-                {plan.features.map(feature => (
-                  <li key={feature}>✓ {feature}</li>
-                ))}
-              </ul>
-
-              <button
-                disabled={isCurrent || isLoading}
-                onClick={() => handleUpgrade(plan.key)}
-                style={{
-                  ...buttonStyle,
-                  background: isCurrent
-                    ? '#232323'
-                    : plan.highlighted
-                      ? 'linear-gradient(135deg, #D4AF37, #FFE08A)'
-                      : '#D4AF37',
-                  color: isCurrent ? '#9CA3AF' : '#000',
-                  cursor: isCurrent || isLoading ? 'default' : 'pointer',
-                  opacity: isLoading ? 0.75 : 1
-                }}
-              >
-                {isLoading
-                  ? 'Opening Payment...'
-                  : isCurrent
-                    ? 'Current Plan'
-                    : plan.key === 'coffee'
-                      ? 'Support & Unlock'
-                      : plan.key === 'pro'
-                        ? 'Start Premium'
-                        : 'Current Plan'}
-              </button>
-            </div>
-          )
-        })}
-      </div>
-
-      {!isAuthenticated && (
-        <p style={signinStyle}>
-          Please{' '}
-          <Link to="/profile" style={{ color: '#D4AF37' }}>
-            sign in
-          </Link>{' '}
-          before upgrading.
-        </p>
-      )}
-    </div>
+      </main>
+    </>
   )
-}
-
-const pageStyle = {
-  maxWidth: '1200px',
-  margin: '0 auto',
-  padding: '80px 20px',
-  color: '#fff'
-}
-
-const headerStyle = {
-  maxWidth: '760px',
-  marginBottom: '42px'
-}
-
-const labelStyle = {
-  color: '#D4AF37',
-  letterSpacing: '0.3em',
-  fontSize: '12px',
-  fontWeight: '900',
-  marginBottom: '14px'
-}
-
-const titleStyle = {
-  fontSize: 'clamp(42px, 7vw, 72px)',
-  lineHeight: '1.05',
-  marginBottom: '18px'
-}
-
-const subtitleStyle = {
-  color: '#9CA3AF',
-  fontSize: '18px',
-  lineHeight: '1.8'
-}
-
-const currentStyle = {
-  color: '#D1D5DB',
-  marginTop: '20px'
-}
-
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))',
-  gap: '24px'
-}
-
-const cardStyle = {
-  background: 'linear-gradient(145deg, #111111, #070707)',
-  borderRadius: '24px',
-  padding: '30px',
-  position: 'relative'
-}
-
-const badgeStyle = {
-  display: 'inline-block',
-  background: '#D4AF37',
-  color: '#000',
-  padding: '7px 11px',
-  borderRadius: '999px',
-  fontWeight: '900',
-  fontSize: '11px',
-  marginBottom: '18px'
-}
-
-const planNameStyle = {
-  color: '#fff',
-  fontSize: '28px',
-  marginBottom: '14px'
-}
-
-const priceRowStyle = {
-  display: 'flex',
-  alignItems: 'flex-end',
-  gap: '8px',
-  marginBottom: '16px'
-}
-
-const priceStyle = {
-  color: '#D4AF37',
-  fontSize: '42px',
-  fontWeight: '900'
-}
-
-const periodStyle = {
-  color: '#9CA3AF',
-  marginBottom: '8px'
-}
-
-const descriptionStyle = {
-  color: '#9CA3AF',
-  lineHeight: '1.7',
-  minHeight: '56px'
-}
-
-const featureListStyle = {
-  marginTop: '24px',
-  paddingLeft: '0',
-  listStyle: 'none',
-  color: '#D1D5DB',
-  lineHeight: '2'
-}
-
-const buttonStyle = {
-  marginTop: '28px',
-  width: '100%',
-  border: 'none',
-  padding: '14px',
-  borderRadius: '14px',
-  fontWeight: '900'
-}
-
-const signinStyle = {
-  color: '#9CA3AF',
-  marginTop: '30px'
 }

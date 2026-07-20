@@ -1,12 +1,39 @@
-import { Link } from 'react-router-dom'
-import { useState, useEffect, useRef } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+
 import { useAuth } from '../../context/AuthContext'
 import { getUserRole } from '../../services/roleService'
 import useSubscription from '../../hooks/useSubscription'
 
+import './Navbar.css'
+
+const navigationItems = [
+  {
+    label: 'AI',
+    path: '/category/ai'
+  },
+  {
+    label: 'Startups',
+    path: '/category/startups'
+  },
+  {
+    label: 'Security',
+    path: '/category/security'
+  }
+]
+
 export default function Navbar() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
   const { isPro } = useSubscription()
-  const { user, signIn, signOut, isAuthenticated } = useAuth()
+
+  const {
+    user,
+    signIn,
+    signOut,
+    isAuthenticated
+  } = useAuth()
 
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -16,20 +43,52 @@ export default function Navbar() {
   const dropdownRef = useRef(null)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
+    function handleScroll() {
+      setScrolled(window.scrollY > 16)
+    }
+
+    handleScroll()
+
+    window.addEventListener('scroll', handleScroll, {
+      passive: true
+    })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   useEffect(() => {
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    function handleOutsideClick(event) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
         setDropdownOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setDropdownOpen(false)
+        setMobileOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleOutsideClick
+      )
+
+      document.removeEventListener(
+        'keydown',
+        handleEscape
+      )
+    }
   }, [])
 
   useEffect(() => {
@@ -39,463 +98,510 @@ export default function Navbar() {
         return
       }
 
-      const role = await getUserRole(user.id)
-      setIsAdmin(role === 'admin')
+      try {
+        const role = await getUserRole(user.id)
+        setIsAdmin(role === 'admin')
+      } catch (error) {
+        console.error(
+          'Navbar admin check failed:',
+          error
+        )
+
+        setIsAdmin(false)
+      }
     }
 
     checkAdmin()
   }, [user, isAuthenticated])
 
-  const navStyle = `
-    :root {
-      --gold: #D4AF37;
-      --surface: #111111;
-      --surface2: #1A1A1A;
-      --border: #232323;
-      --text: #FFFFFF;
-      --muted: #9CA3AF;
-    }
+  useEffect(() => {
+    setMobileOpen(false)
+    setDropdownOpen(false)
+  }, [location.pathname])
 
-    .vb-nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      background: rgba(10,10,10,0.96);
-      backdrop-filter: blur(18px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .vb-nav-inner {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 0 24px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-    }
-
-    .vb-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      flex-shrink: 0;
-    }
-
-    .vb-logo-icon {
-      width: 34px;
-      height: 34px;
-      background: var(--gold);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #000;
-      font-weight: 900;
-    }
-
-    .vb-logo-text {
-      font-size: 22px;
-      font-weight: 900;
-      color: var(--text);
-      letter-spacing: -1px;
-      line-height: 1;
-    }
-
-    .vb-logo-pro {
-      color: var(--gold);
-      margin-left: 6px;
-    }
-
-    .vb-links {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .vb-link {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 14px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      transition: 0.2s;
-      white-space: nowrap;
-    }
-
-    .vb-link:hover,
-    .vb-link.active {
-      color: var(--gold);
-      background: var(--surface2);
-    }
-
-    .vb-live {
-      color: var(--muted);
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-right: 8px;
-    }
-
-    .vb-live-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #22C55E;
-    }
-
-    .vb-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .vb-search-btn,
-    .vb-signin,
-    .vb-user {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 10px;
-      height: 38px;
-    }
-
-    .vb-search-btn {
-      width: 38px;
-      cursor: pointer;
-    }
-
-    .vb-signin {
-      padding: 0 16px;
-      color: var(--gold);
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .vb-signin:hover {
-      background: var(--gold);
-      color: #000;
-    }
-
-    .vb-user-wrap {
-      position: relative;
-    }
-
-    .vb-user {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 6px 4px 12px;
-      cursor: pointer;
-    }
-
-    .vb-user-name {
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .vb-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      background: var(--gold);
-      color: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      font-weight: 800;
-    }
-
-    .vb-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .vb-dropdown {
-      position: absolute;
-      top: calc(100% + 10px);
-      right: 0;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 8px;
-      min-width: 190px;
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-6px);
-      transition: 0.2s;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-    }
-
-    .vb-dropdown.open {
-      opacity: 1;
-      pointer-events: all;
-      transform: translateY(0);
-    }
-
-    .vb-dropdown-item {
-      width: 100%;
-      display: block;
-      padding: 10px 12px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      text-align: left;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 14px;
-      text-decoration: none;
-    }
-
-    .vb-dropdown-item:hover {
-      background: var(--surface2);
-      color: var(--text);
-    }
-
-    .vb-dropdown-item.admin {
-      color: var(--gold);
-      font-weight: 700;
-    }
-
-    .vb-dropdown-item.danger:hover {
-      color: #EF4444;
-    }
-
-    .vb-dropdown-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 6px 0;
-    }
-
-    .vb-hamburger {
-      display: none;
-    }
-
-    .vb-mobile-menu {
-      display: none;
-    }
-
-    @media(max-width: 900px) {
-      .vb-links {
-        display: none;
-      }
-
-      .vb-hamburger {
-        display: flex;
-        width: 38px;
-        height: 38px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--surface);
-        color: var(--text);
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 4px;
-        cursor: pointer;
-      }
-
-      .vb-hamburger span {
-        width: 17px;
-        height: 2px;
-        background: currentColor;
-      }
-
-      .vb-mobile-menu.open {
-        display: flex;
-        position: fixed;
-        top: 64px;
-        left: 0;
-        right: 0;
-        background: #0A0A0A;
-        border-bottom: 1px solid var(--border);
-        padding: 18px;
-        z-index: 99;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .vb-mobile-link {
-        color: var(--text);
-        text-decoration: none;
-        padding: 12px;
-        border-radius: 10px;
-        background: var(--surface);
-        border: none;
-        text-align: left;
-      }
-
-      .vb-mobile-link.admin {
-        color: var(--gold);
-        font-weight: 800;
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth > 900) {
+        setMobileOpen(false)
       }
     }
-  `
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen
+      ? 'hidden'
+      : ''
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileOpen])
+
+  function isActive(path) {
+    if (path === '/') {
+      return location.pathname === '/'
+    }
+
+    return location.pathname.startsWith(path)
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOut()
+
+      setDropdownOpen(false)
+      setMobileOpen(false)
+
+      navigate('/')
+    } catch (error) {
+      console.error('Sign-out failed:', error)
+    }
+  }
+
+  function closeMobileMenu() {
+    setMobileOpen(false)
+  }
+
+  function handleMobileSignIn() {
+    closeMobileMenu()
+    signIn()
+  }
+
+  const firstName =
+    user?.user_metadata?.full_name?.split(' ')[0] ||
+    user?.user_metadata?.name?.split(' ')[0] ||
+    user?.email?.split('@')[0] ||
+    'User'
+
+  const avatarUrl =
+    user?.user_metadata?.avatar_url ||
+    user?.user_metadata?.picture ||
+    null
+
+  const avatarLetter =
+    firstName.charAt(0).toUpperCase() || 'U'
 
   return (
     <>
-      <style>{navStyle}</style>
+      <header
+        className={`vb-navbar${
+          scrolled ? ' vb-navbar--scrolled' : ''
+        }`}
+      >
+        <nav
+          className="vb-navbar__inner"
+          aria-label="Main navigation"
+        >
+          <Link
+            to="/"
+            className="vb-navbar__brand"
+            aria-label="VedaByte home"
+          >
+            <span
+              className="vb-navbar__brand-mark"
+              aria-hidden="true"
+            >
+              V
+            </span>
 
-      <nav className={`vb-nav${scrolled ? ' scrolled' : ''}`}>
-        <div className="vb-nav-inner">
-          <Link className="vb-logo" to="/">
-            <div className="vb-logo-icon">V</div>
+            <span className="vb-navbar__brand-content">
+              <span className="vb-navbar__brand-name">
+                VedaByte
 
-            <span className="vb-logo-text">
-              VedaByte
-              {isPro && <span className="vb-logo-pro">⭐ PRO</span>}
+                {isPro && (
+                  <span className="vb-navbar__pro-mark">
+                    PRO
+                  </span>
+                )}
+              </span>
+
+              <span className="vb-navbar__brand-tagline">
+                Technology Intelligence
+              </span>
             </span>
           </Link>
 
-          <div className="vb-links">
-            <div className="vb-live">
-              <span className="vb-live-dot"></span> LIVE
+          <div className="vb-navbar__desktop">
+            <div className="vb-navbar__links">
+              {navigationItems.map(item => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`vb-navbar__link${
+                    isActive(item.path)
+                      ? ' vb-navbar__link--active'
+                      : ''
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              {isAuthenticated && (
+                <Link
+                  to="/premium"
+                  className={`vb-navbar__link vb-navbar__link--premium${
+                    isActive('/premium')
+                      ? ' vb-navbar__link--active'
+                      : ''
+                  }`}
+                >
+                  Premium
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className={`vb-navbar__link${
+                    isActive('/admin')
+                      ? ' vb-navbar__link--active'
+                      : ''
+                  }`}
+                >
+                  Admin
+                </Link>
+              )}
             </div>
-
-            <Link className="vb-link active" to="/">Home</Link>
-            <Link className="vb-link" to="/category/ai">AI</Link>
-            <Link className="vb-link" to="/category/startups">Startups</Link>
-            <Link className="vb-link" to="/category/security">Security</Link>
-            <Link className="vb-link" to="/search">Search</Link>
-
-            {isAuthenticated && (
-              <Link className="vb-link" to="/premium">Premium</Link>
-            )}
-
-            {isAdmin && (
-              <Link className="vb-link" to="/admin">Admin</Link>
-            )}
           </div>
 
-          <div className="vb-right">
+          <div className="vb-navbar__actions">
             <button
-              className="vb-search-btn"
-              onClick={() => window.location.href = '/search'}
+              type="button"
+              className="vb-navbar__search"
+              onClick={() => navigate('/search')}
+              aria-label="Open search"
             >
-              🔍
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+
+              <span>Search</span>
             </button>
 
             {isAuthenticated ? (
-              <div className="vb-user-wrap" ref={dropdownRef}>
+              <div
+                className="vb-navbar__account"
+                ref={dropdownRef}
+              >
                 <button
                   type="button"
-                  className="vb-user"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="vb-navbar__account-button"
+                  onClick={() => {
+                    setDropdownOpen(current => !current)
+                  }}
+                  aria-label="Open account menu"
+                  aria-haspopup="menu"
+                  aria-expanded={dropdownOpen}
                 >
-                  <span className="vb-user-name">
-                    {user?.user_metadata?.full_name?.split(' ')[0] || 'User'}
-                  </span>
-
-                  <div className="vb-avatar">
-                    {user?.user_metadata?.avatar_url ? (
+                  <span className="vb-navbar__avatar">
+                    {avatarUrl ? (
                       <img
-                        src={user.user_metadata.avatar_url}
-                        alt="avatar"
+                        src={avatarUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      'U'
+                      avatarLetter
                     )}
-                  </div>
+                  </span>
+
+                  <svg
+                    className="vb-navbar__account-arrow"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="m5 7.5 5 5 5-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
 
-                <div className={`vb-dropdown${dropdownOpen ? ' open' : ''}`}>
-                  <Link className="vb-dropdown-item" to="/profile">
-                    Profile
-                  </Link>
-
-                  <Link className="vb-dropdown-item" to="/settings">
-                    Settings
-                  </Link>
-
-                  <Link className="vb-dropdown-item" to="/membership">
-                    My Membership
-                  </Link>
-
-                  <Link className="vb-dropdown-item" to="/bookmarks">
-                    Saved Articles
-                  </Link>
-
-                  {isAdmin && (
-                    <>
-                      <div className="vb-dropdown-divider"></div>
-
-                      <Link className="vb-dropdown-item admin" to="/admin">
-                        Admin Dashboard
-                      </Link>
-                    </>
-                  )}
-
-                  <div className="vb-dropdown-divider"></div>
-
-                  <button
-                    className="vb-dropdown-item danger"
-                    onClick={signOut}
+                {dropdownOpen && (
+                  <div
+                    className="vb-navbar__dropdown"
+                    role="menu"
                   >
-                    Sign Out
-                  </button>
-                </div>
+                    <div className="vb-navbar__dropdown-user">
+                      <span className="vb-navbar__dropdown-name">
+                        {firstName}
+                      </span>
+
+                      <span className="vb-navbar__dropdown-email">
+                        {user?.email}
+                      </span>
+                    </div>
+
+                    <div className="vb-navbar__dropdown-divider" />
+
+                    <Link
+                      to="/profile"
+                      className="vb-navbar__dropdown-item"
+                      role="menuitem"
+                    >
+                      Profile
+                    </Link>
+
+                    <Link
+                      to="/settings"
+                      className="vb-navbar__dropdown-item"
+                      role="menuitem"
+                    >
+                      Settings
+                    </Link>
+
+                    <Link
+                      to="/membership"
+                      className="vb-navbar__dropdown-item"
+                      role="menuitem"
+                    >
+                      My Membership
+                    </Link>
+
+                    <Link
+                      to="/payments"
+                      className="vb-navbar__dropdown-item"
+                      role="menuitem"
+                    >
+                      Payment History
+                    </Link>
+
+                    <Link
+                      to="/bookmarks"
+                      className="vb-navbar__dropdown-item"
+                      role="menuitem"
+                    >
+                      Saved Articles
+                    </Link>
+
+                    {isAdmin && (
+                      <>
+                        <div className="vb-navbar__dropdown-divider" />
+
+                        <Link
+                          to="/admin"
+                          className="vb-navbar__dropdown-item vb-navbar__dropdown-item--gold"
+                          role="menuitem"
+                        >
+                          Admin Dashboard
+                        </Link>
+                      </>
+                    )}
+
+                    <div className="vb-navbar__dropdown-divider" />
+
+                    <button
+                      type="button"
+                      className="vb-navbar__dropdown-item vb-navbar__dropdown-item--danger"
+                      onClick={handleSignOut}
+                      role="menuitem"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              <button className="vb-signin" onClick={signIn}>
+              <button
+                type="button"
+                className="vb-navbar__signin"
+                onClick={signIn}
+              >
                 Sign In
               </button>
             )}
 
             <button
-              className="vb-hamburger"
-              onClick={() => setMobileOpen(!mobileOpen)}
+              type="button"
+              className={`vb-navbar__menu-button${
+                mobileOpen
+                  ? ' vb-navbar__menu-button--open'
+                  : ''
+              }`}
+              onClick={() => {
+                setMobileOpen(current => !current)
+              }}
+              aria-label={
+                mobileOpen
+                  ? 'Close navigation menu'
+                  : 'Open navigation menu'
+              }
+              aria-expanded={mobileOpen}
+              aria-controls="vedabyte-mobile-navigation"
             >
-              <span></span>
-              <span></span>
-              <span></span>
+              <span />
+              <span />
+              <span />
             </button>
           </div>
+        </nav>
+      </header>
+
+      {mobileOpen && (
+        <div
+          id="vedabyte-mobile-navigation"
+          className="vb-mobile-navigation"
+        >
+          <div className="vb-mobile-navigation__content">
+            <div className="vb-mobile-navigation__label">
+              Explore
+            </div>
+
+            <Link
+              to="/"
+              className={`vb-mobile-navigation__link${
+                isActive('/')
+                  ? ' vb-mobile-navigation__link--active'
+                  : ''
+              }`}
+              onClick={closeMobileMenu}
+            >
+              Home
+            </Link>
+
+            {navigationItems.map(item => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`vb-mobile-navigation__link${
+                  isActive(item.path)
+                    ? ' vb-mobile-navigation__link--active'
+                    : ''
+                }`}
+                onClick={closeMobileMenu}
+              >
+                {item.label}
+              </Link>
+            ))}
+
+            <Link
+              to="/search"
+              className={`vb-mobile-navigation__link${
+                isActive('/search')
+                  ? ' vb-mobile-navigation__link--active'
+                  : ''
+              }`}
+              onClick={closeMobileMenu}
+            >
+              Search
+            </Link>
+
+            {isAuthenticated && (
+              <>
+                <div className="vb-mobile-navigation__divider" />
+
+                <div className="vb-mobile-navigation__label">
+                  Your account
+                </div>
+
+                <Link
+                  to="/premium"
+                  className={`vb-mobile-navigation__link vb-mobile-navigation__link--gold${
+                    isActive('/premium')
+                      ? ' vb-mobile-navigation__link--active'
+                      : ''
+                  }`}
+                  onClick={closeMobileMenu}
+                >
+                  Premium
+                </Link>
+
+                <Link
+                  to="/bookmarks"
+                  className="vb-mobile-navigation__link"
+                  onClick={closeMobileMenu}
+                >
+                  Saved Articles
+                </Link>
+
+                <Link
+                  to="/membership"
+                  className="vb-mobile-navigation__link"
+                  onClick={closeMobileMenu}
+                >
+                  My Membership
+                </Link>
+
+                <Link
+                  to="/payments"
+                  className="vb-mobile-navigation__link"
+                  onClick={closeMobileMenu}
+                >
+                  Payment History
+                </Link>
+
+                <Link
+                  to="/profile"
+                  className="vb-mobile-navigation__link"
+                  onClick={closeMobileMenu}
+                >
+                  Profile
+                </Link>
+
+                <Link
+                  to="/settings"
+                  className="vb-mobile-navigation__link"
+                  onClick={closeMobileMenu}
+                >
+                  Settings
+                </Link>
+              </>
+            )}
+
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="vb-mobile-navigation__link vb-mobile-navigation__link--gold"
+                onClick={closeMobileMenu}
+              >
+                Admin Dashboard
+              </Link>
+            )}
+
+            <div className="vb-mobile-navigation__footer">
+              {!isAuthenticated ? (
+                <button
+                  type="button"
+                  className="vb-mobile-navigation__primary"
+                  onClick={handleMobileSignIn}
+                >
+                  Sign In with Google
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="vb-mobile-navigation__danger"
+                  onClick={handleSignOut}
+                >
+                  Sign Out
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-      </nav>
-
-      <div className={`vb-mobile-menu${mobileOpen ? ' open' : ''}`}>
-        <Link className="vb-mobile-link" to="/">Home</Link>
-        <Link className="vb-mobile-link" to="/category/ai">AI</Link>
-        <Link className="vb-mobile-link" to="/category/startups">Startups</Link>
-        <Link className="vb-mobile-link" to="/category/security">Security</Link>
-        <Link className="vb-mobile-link" to="/search">Search</Link>
-
-        {isAuthenticated && (
-          <>
-            <Link className="vb-mobile-link" to="/premium">Premium</Link>
-            <Link className="vb-mobile-link" to="/bookmarks">Saved Articles</Link>
-            <Link className="vb-mobile-link" to="/profile">Profile</Link>
-            <Link className="vb-mobile-link" to="/settings">Settings</Link>
-            
-          </>
-        )}
-
-        {isAdmin && (
-          <Link className="vb-mobile-link admin" to="/admin">
-            Admin Dashboard
-          </Link>
-        )}
-
-        {!isAuthenticated ? (
-          <button className="vb-mobile-link" onClick={signIn}>
-            Sign In with Google
-          </button>
-        ) : (
-          <button className="vb-mobile-link" onClick={signOut}>
-            Sign Out
-          </button>
-        )}
-      </div>
+      )}
     </>
   )
 }

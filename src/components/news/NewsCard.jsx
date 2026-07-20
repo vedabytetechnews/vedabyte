@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useAuth } from '../../context/AuthContext'
 import { saveBookmark } from '../../services/bookmarkService'
+import {
+  getSafeImageUrl,
+  handleImageError
+} from '../../lib/imageFallback'
 
 export default function NewsCard({
   id,
@@ -16,177 +20,168 @@ export default function NewsCard({
   isLive
 }) {
   const { user, isAuthenticated } = useAuth()
+
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  async function handleSave(e) {
-    e.preventDefault()
-    e.stopPropagation()
+  const safeImage = useMemo(
+    () => getSafeImageUrl(image),
+    [image]
+  )
 
-    if (!isAuthenticated) {
-      alert('Please sign in first')
+  const formattedDate = useMemo(() => {
+    if (!publishedAt) return 'Today'
+
+    const date = new Date(publishedAt)
+
+    if (Number.isNaN(date.getTime())) {
+      return 'Today'
+    }
+
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  }, [publishedAt])
+
+  async function handleSave(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!isAuthenticated || !user) {
+      window.alert('Please sign in first')
       return
     }
 
-    const success = await saveBookmark(user.id, {
-      id,
-      title,
-      category,
-      image
-    })
+    if (saved || saving) return
 
-    if (success) {
-  setSaved(true)
+    try {
+      setSaving(true)
 
-    } else {
-      console.error('Failed to save article')
+      const success = await saveBookmark(user.id, {
+        id,
+        title,
+        category,
+        image: safeImage
+      })
+
+      if (success) {
+        setSaved(true)
+      } else {
+        console.error('Failed to save article')
+      }
+    } catch (error) {
+      console.error('Failed to save article:', error)
+    } finally {
+      setSaving(false)
     }
   }
 
-  const cardContent = (
-    <article
-  style={{
-    background: '#111111',
-    border: '1px solid #232323',
-    borderRadius: '18px',
-    overflow: 'hidden',
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column'
-  }}
->
-      <img
-        src={image}
-        alt={title}
-        style={{
-          width: '100%',
-          height: '220px',
-          objectFit: 'cover'
-        }}
-      />
+  function saveLiveArticle() {
+    if (!isLive) return
 
-      <div
-  style={{
-    padding: '18px',
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1
-  }}
->
-        <span
-          style={{
-            color: '#D4AF37',
-            fontSize: '12px',
-            fontWeight: '700',
-            textTransform: 'uppercase'
-          }}
-        >
-          {category}
-        </span>
+    try {
+      localStorage.setItem(
+        `vedabyte_live_article_${id}`,
+        JSON.stringify({
+          id,
+          title,
+          category,
+          image: safeImage,
+          description,
+          source,
+          publishedAt,
+          url,
+          isLive
+        })
+      )
+    } catch (error) {
+      console.error('Unable to save live article:', error)
+    }
+  }
 
-        <h3
-          style={{
-            color: '#ffffff',
-            marginTop: '10px',
-            lineHeight: '1.4',
-            fontSize: '20px'
-          }}
-        >
-          {title}
-        </h3>
+  return (
+    <article className="news-card vb-hover-lift">
+      <Link
+        to={`/article/${id}`}
+        onClick={saveLiveArticle}
+        className="news-card-main-link"
+        aria-label={`Read ${title}`}
+      >
+        <div className="news-card-image-wrapper vb-image-zoom">
+          <img
+            src={safeImage}
+            alt={title || 'VedaByte technology article'}
+            loading="lazy"
+            decoding="async"
+            onError={handleImageError}
+            width="640"
+            height="360"
+            className="news-card-image"
+          />
 
-        <p
-          style={{
-            color: '#9CA3AF',
-            marginTop: '10px',
-            fontSize: '14px'
-          }}
-        >
-          {description}
-        </p>
+          <span className="news-card-category">
+            {category || 'Technology'}
+          </span>
+        </div>
 
-        <p
-          style={{
-            color: '#D4AF37',
-            fontSize: '12px',
-            marginTop: '14px',
-            fontWeight: '700'
-          }}
-        >
-          Source: {source || 'VedaByte'}
-        </p>
+        <div className="news-card-content">
+          <h3 className="news-card-title">
+            {title}
+          </h3>
 
-        <p
-          style={{
-            color: '#6B7280',
-            fontSize: '12px',
-            marginTop: '5px'
-          }}
+          {description && (
+            <p className="news-card-description">
+              {description}
+            </p>
+          )}
+
+          <div className="news-card-meta">
+            <span className="news-card-source">
+              {source || 'VedaByte'}
+            </span>
+
+            <time
+              dateTime={publishedAt || undefined}
+              className="news-card-date"
+            >
+              {formattedDate}
+            </time>
+          </div>
+        </div>
+      </Link>
+
+      <div className="news-card-actions">
+        <Link
+          to={`/article/${id}`}
+          onClick={saveLiveArticle}
+          className="news-card-read-link"
         >
-          {publishedAt
-            ? new Date(publishedAt).toLocaleDateString()
-            : 'Today'}
-        </p>
+          Read article
+          <span aria-hidden="true">→</span>
+        </Link>
 
         <button
-  onClick={handleSave}
-  disabled={saved}
-  style={{
-    marginTop: 'auto',
-    width: '100%',
-    background: saved ? '#16a34a' : '#D4AF37',
-    color: '#000',
-    border: 'none',
-    padding: '11px',
-    borderRadius: '10px',
-    fontWeight: '800',
-    cursor: 'pointer'
-  }}
->
-          {saved ? '✓ Saved' : 'Save Article'}
+          type="button"
+          onClick={handleSave}
+          disabled={saved || saving}
+          className={`news-card-save-button${
+            saved ? ' saved' : ''
+          }`}
+          aria-label={
+            saved
+              ? 'Article saved'
+              : `Save ${title}`
+          }
+        >
+          {saving
+            ? 'Saving...'
+            : saved
+              ? '✓ Saved'
+              : 'Save'}
         </button>
       </div>
     </article>
-  )
-
-  if (isLive) {
-  return (
-    <Link
-      to={`/article/${id}`}
-      onClick={() => {
-        localStorage.setItem(
-          `vedabyte_live_article_${id}`,
-          JSON.stringify({
-            id,
-            title,
-            category,
-            image,
-            description,
-            source,
-            publishedAt,
-            url,
-            isLive
-          })
-        )
-      }}
-      style={{
-        textDecoration: 'none',
-        display: 'block'
-      }}
-    >
-      {cardContent}
-    </Link>
-  )
-}
-
-  return (
-    <Link
-      to={`/article/${id}`}
-      style={{
-        textDecoration: 'none',
-        display: 'block'
-      }}
-    >
-      {cardContent}
-    </Link>
   )
 }

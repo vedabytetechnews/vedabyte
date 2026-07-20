@@ -1,16 +1,27 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import NewsCard from '../components/news/NewsCard'
 import Newsletter from '../components/newsletter/Newsletter'
+import ErrorState from '../components/ErrorState'
+import SEO from '../components/SEO'
+import StructuredData from '../components/StructuredData'
+
 import localNews from '../data/news'
+
 import { getTopTechNews } from '../services/newsService'
 import { getTrendingArticleIds } from '../services/trendingService'
 import { getCommentCount } from '../services/commentStatsService'
+
 import {
   getFeaturedArticleIds,
   getEditedArticleMap
 } from '../services/articleAdminService'
+
+import organizationSchema from '../seo/organizationSchema'
+import websiteSchema from '../seo/websiteSchema'
+
+import { handleImageError } from '../lib/imageFallback'
 
 export default function Home() {
   const [articles, setArticles] = useState(localNews)
@@ -18,364 +29,501 @@ export default function Home() {
   const [mostDiscussed, setMostDiscussed] = useState([])
   const [loading, setLoading] = useState(true)
   const [usingLiveNews, setUsingLiveNews] = useState(false)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    async function loadLiveNews() {
-      const editedMap = getEditedArticleMap()
+    let isMounted = true
 
-      const editedLocalNews = localNews.map(article => ({
-        ...article,
-        ...(editedMap[article.id] || {})
-      }))
+    async function loadNews() {
+      try {
+        const editedMap = getEditedArticleMap()
 
-      const liveArticles = await getTopTechNews()
-
-      const finalArticles =
-        liveArticles.length > 0 ? liveArticles : editedLocalNews
-
-      setUsingLiveNews(liveArticles.length > 0)
-      setArticles(finalArticles)
-
-      const trendingIds = await getTrendingArticleIds()
-
-      const matchedTrending = trendingIds
-        .map(item => {
-          const found = finalArticles.find(
-            article => article.id === item.article_id
-          )
-
-          return found
-            ? {
-                ...found,
-                likes: item.likes
-              }
-            : null
-        })
-        .filter(Boolean)
-
-      setTrendingArticles(matchedTrending)
-
-      const articlesWithCommentCounts = await Promise.all(
-        finalArticles.map(async article => ({
+        const editedLocalNews = localNews.map(article => ({
           ...article,
-          comments: await getCommentCount(article.id)
+          ...(editedMap[article.id] || {})
         }))
-      )
 
-      const discussedArticles = articlesWithCommentCounts
-        .filter(article => article.comments > 0)
-        .sort((a, b) => b.comments - a.comments)
-        .slice(0, 4)
+        const liveArticles = await getTopTechNews()
 
-      setMostDiscussed(discussedArticles)
-      setLoading(false)
+        const finalArticles =
+          Array.isArray(liveArticles) && liveArticles.length > 0
+            ? liveArticles
+            : editedLocalNews
+
+        if (!isMounted) return
+
+        setUsingLiveNews(
+          Array.isArray(liveArticles) && liveArticles.length > 0
+        )
+
+        setArticles(finalArticles)
+
+        const trendingIds = await getTrendingArticleIds()
+
+        if (!isMounted) return
+
+        const matchedTrending = Array.isArray(trendingIds)
+          ? trendingIds
+              .map(item => {
+                const article = finalArticles.find(
+                  currentArticle =>
+                    currentArticle.id === item.article_id
+                )
+
+                if (!article) return null
+
+                return {
+                  ...article,
+                  likes: item.likes
+                }
+              })
+              .filter(Boolean)
+          : []
+
+        setTrendingArticles(matchedTrending)
+
+        const articlesWithComments = await Promise.all(
+          finalArticles.map(async article => {
+            try {
+              const comments = await getCommentCount(article.id)
+
+              return {
+                ...article,
+                comments: Number(comments) || 0
+              }
+            } catch (commentError) {
+              console.error(
+                `Unable to load comments for ${article.id}:`,
+                commentError
+              )
+
+              return {
+                ...article,
+                comments: 0
+              }
+            }
+          })
+        )
+
+        if (!isMounted) return
+
+        const discussedArticles = articlesWithComments
+          .filter(article => article.comments > 0)
+          .sort((a, b) => b.comments - a.comments)
+          .slice(0, 4)
+
+        setMostDiscussed(discussedArticles)
+      } catch (loadError) {
+        console.error('Unable to load Home page news:', loadError)
+
+        if (isMounted) {
+          setError(loadError)
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
     }
 
-    loadLiveNews()
+    loadNews()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
-  const editedMap = getEditedArticleMap()
-  const featuredIds = getFeaturedArticleIds()
+  const editedLocalNews = useMemo(() => {
+    const editedMap = getEditedArticleMap()
 
-  const editedLocalNews = localNews.map(article => ({
-    ...article,
-    ...(editedMap[article.id] || {})
-  }))
+    return localNews.map(article => ({
+      ...article,
+      ...(editedMap[article.id] || {})
+    }))
+  }, [])
 
-  const selectedLocalFeatured = editedLocalNews.find(article =>
-    featuredIds.includes(article.id)
+  const featured = useMemo(() => {
+    const featuredIds = getFeaturedArticleIds()
+
+    const selectedLocalArticle = editedLocalNews.find(article =>
+      featuredIds.includes(article.id)
+    )
+
+    return selectedLocalArticle || articles[0] || null
+  }, [articles, editedLocalNews])
+
+  const aiNews = useMemo(
+    () =>
+      articles.filter(
+        article =>
+          article.category?.toLowerCase() === 'ai'
+      ),
+    [articles]
   )
 
-  const featured = selectedLocalFeatured || articles[0]
+  const startupNews = useMemo(
+    () =>
+      articles.filter(
+        article =>
+          article.category?.toLowerCase() === 'startups'
+      ),
+    [articles]
+  )
 
-  const aiNews = articles.filter(article => article.category === 'AI')
-  const startupNews = articles.filter(article => article.category === 'Startups')
-  const securityNews = articles.filter(article => article.category === 'Security')
+  const securityNews = useMemo(
+    () =>
+      articles.filter(
+        article =>
+          article.category?.toLowerCase() === 'security'
+      ),
+    [articles]
+  )
+
+  function saveLiveArticle(article) {
+    if (!article?.isLive) return
+
+    try {
+      localStorage.setItem(
+        `vedabyte_live_article_${article.id}`,
+        JSON.stringify(article)
+      )
+    } catch (storageError) {
+      console.error('Unable to save live article:', storageError)
+    }
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Unable to load news"
+        message="We couldn't load the latest technology news. Please refresh the page or try again later."
+        buttonText="Go Home"
+        buttonLink="/"
+      />
+    )
+  }
 
   return (
-    <div
-      style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: '30px 20px'
-      }}
-    >
-      <div
-        style={{
-          background: '#D4AF37',
-          color: '#000',
-          padding: '14px 20px',
-          borderRadius: '12px',
-          fontWeight: '700',
-          marginBottom: '35px'
-        }}
-      >
-        🔥 {usingLiveNews ? 'LIVE TECHNOLOGY NEWS' : 'BREAKING'} • Latest AI, Startup & Cybersecurity News
-      </div>
+    <>
+      <SEO
+        title="VedaByte | AI, Startup & Technology News"
+        description="Stay updated with AI, Startups, Cybersecurity and Technology news from around the world."
+        url="https://vedabyte.tech/"
+      />
 
-      {loading && (
-        <div
-          style={{
-            background: '#111111',
-            border: '1px solid #232323',
-            color: '#D1D5DB',
-            borderRadius: '16px',
-            padding: '20px',
-            marginBottom: '30px'
-          }}
-        >
-          Loading latest technology news...
-        </div>
-      )}
+      <StructuredData data={organizationSchema} />
+      <StructuredData data={websiteSchema} />
 
-      {featured && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1fr',
-            gap: '30px',
-            marginBottom: '50px'
-          }}
-        >
-          <Link
-            to={`/article/${featured.id}`}
-            onClick={() => {
-              if (featured.isLive) {
-                localStorage.setItem(
-                  `vedabyte_live_article_${featured.id}`,
-                  JSON.stringify(featured)
-                )
-              }
-            }}
-            style={{
-              background: '#111111',
-              border: '1px solid #232323',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              textDecoration: 'none',
-              display: 'block'
-            }}
+      <main className="min-h-screen overflow-x-hidden bg-[#080808] text-[#f7f2e7]">
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-10">
+          <section
+            aria-label="Latest update"
+            className="vb-slide-down mb-6 overflow-hidden rounded-xl border border-[#e2c76e]/30 bg-gradient-to-r from-[#b99735] via-[#d4af37] to-[#ebd477] text-[#080808] shadow-[0_12px_40px_rgba(212,175,55,0.12)] sm:mb-8"
           >
-            <img
-              src={featured.image}
-              alt={featured.title}
-              style={{
-                width: '100%',
-                height: '450px',
-                objectFit: 'cover'
-              }}
-            />
-
-            <div style={{ padding: '25px' }}>
+            <div className="flex min-h-12 items-center gap-2 px-4 py-3 sm:px-5">
               <span
-                style={{
-                  color: '#D4AF37',
-                  fontWeight: '700',
-                  letterSpacing: '1px'
-                }}
+                aria-hidden="true"
+                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/10 text-xs"
               >
-                FEATURED STORY
+                ●
               </span>
 
-              <h1
-                style={{
-                  color: '#FFFFFF',
-                  marginTop: '12px',
-                  fontSize: '42px',
-                  lineHeight: '1.2'
-                }}
-              >
-                {featured.title}
-              </h1>
-
-              <p
-                style={{
-                  color: '#D1D5DB',
-                  marginTop: '16px',
-                  fontSize: '16px',
-                  lineHeight: '1.8'
-                }}
-              >
-                {featured.description}
+              <p className="min-w-0 text-xs font-extrabold uppercase leading-5 tracking-[0.04em] sm:text-sm sm:tracking-[0.08em]">
+                {usingLiveNews
+                  ? 'Live Technology News'
+                  : 'Breaking News'}
+                <span className="mx-2 opacity-60">•</span>
+                Latest AI, startup and cybersecurity news
               </p>
             </div>
-          </Link>
+          </section>
 
-          <div
-            style={{
-              background: '#111111',
-              border: '1px solid #232323',
-              borderRadius: '20px',
-              padding: '25px'
-            }}
-          >
-            <h3
-              style={{
-                color: '#D4AF37',
-                marginBottom: '20px',
-                fontSize: '24px'
-              }}
+          {loading && (
+            <div
+              role="status"
+              className="vb-fade-in mb-6 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#111111] px-4 py-4 text-sm text-[#c8c2b5] sm:mb-8 sm:px-5"
             >
-              Trending
-            </h3>
+              <span className="h-5 w-5 shrink-0 rounded-full border-2 border-[#d4af37]/25 border-t-[#d4af37] vb-spin" />
 
-            {articles.slice(1, 6).map(article => (
+              <span>Loading the latest technology news...</span>
+            </div>
+          )}
+
+          {featured && (
+            <section
+              aria-label="Featured and trending news"
+              className="mb-12 grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:gap-6 xl:mb-16"
+            >
               <Link
-                key={article.id}
-                to={`/article/${article.id}`}
-                onClick={() => {
-                  if (article.isLive) {
-                    localStorage.setItem(
-                      `vedabyte_live_article_${article.id}`,
-                      JSON.stringify(article)
-                    )
-                  }
-                }}
-                style={{
-                  display: 'block',
-                  color: '#FFFFFF',
-                  marginBottom: '18px',
-                  lineHeight: '1.6',
-                  borderBottom: '1px solid #232323',
-                  paddingBottom: '12px',
-                  textDecoration: 'none'
-                }}
+                to={`/article/${featured.id}`}
+                onClick={() => saveLiveArticle(featured)}
+                className="vb-hover-lift vb-image-zoom vb-slide-up group min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#101010] text-inherit no-underline shadow-[0_20px_60px_rgba(0,0,0,0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]"
               >
-                📰 {article.title}
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#171717] sm:aspect-video lg:aspect-[16/9]">
+                  <img
+                    src={featured.image}
+                    alt={featured.title}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    onError={handleImageError}
+                    width="1200"
+                    height="675"
+                    className="h-full w-full object-cover"
+                  />
+
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+
+                  {featured.category && (
+                    <span className="absolute left-4 top-4 rounded-full border border-[#d4af37]/35 bg-black/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#f0d978] backdrop-blur-md sm:left-5 sm:top-5 sm:text-xs">
+                      {featured.category}
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-5 sm:p-7 lg:p-8">
+                  <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#d4af37] sm:text-xs">
+                    Featured story
+                  </p>
+
+                  <h1 className="max-w-4xl text-[clamp(1.65rem,5.5vw,3.25rem)] font-bold leading-[1.08] tracking-[-0.035em] text-[#fffaf0] transition-colors duration-200 group-hover:text-[#f3dc89]">
+                    {featured.title}
+                  </h1>
+
+                  {featured.description && (
+                    <p className="mt-4 max-w-3xl text-sm leading-6 text-[#bcb6aa] sm:text-base sm:leading-7 lg:text-[17px]">
+                      {featured.description}
+                    </p>
+                  )}
+
+                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#e4c85e]">
+                    Read full story
+                    <span
+                      aria-hidden="true"
+                      className="transition-transform duration-200 group-hover:translate-x-1"
+                    >
+                      →
+                    </span>
+                  </div>
+                </div>
               </Link>
-            ))}
-          </div>
+
+              <aside className="vb-slide-left min-w-0 rounded-2xl border border-white/10 bg-[#101010] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] sm:p-6">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8e887d]">
+                      Editor’s radar
+                    </p>
+
+                    <h2 className="text-xl font-bold tracking-[-0.02em] text-[#e4c85e] sm:text-2xl">
+                      Trending
+                    </h2>
+                  </div>
+
+                  <span
+                    aria-hidden="true"
+                    className="h-2.5 w-2.5 rounded-full bg-[#d4af37] shadow-[0_0_18px_rgba(212,175,55,0.65)] vb-pulse-soft"
+                  />
+                </div>
+
+                <div className="divide-y divide-white/[0.08]">
+                  {articles.slice(1, 6).map((article, index) => (
+                    <Link
+                      key={article.id}
+                      to={`/article/${article.id}`}
+                      onClick={() => saveLiveArticle(article)}
+                      className="group grid min-w-0 grid-cols-[28px_minmax(0,1fr)] gap-3 py-4 text-inherit no-underline first:pt-0 last:pb-0 focus-visible:outline-none"
+                    >
+                      <span className="pt-0.5 text-xs font-extrabold text-[#706a60] transition-colors group-hover:text-[#d4af37]">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+
+                      <span className="min-w-0 text-sm font-semibold leading-5 text-[#eee8dc] transition-colors group-hover:text-[#d4af37] sm:leading-6">
+                        {article.title}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </aside>
+            </section>
+          )}
+
+          {trendingArticles.length > 0 && (
+            <NewsSection
+              eyebrow="Popular with readers"
+              title="Trending Now"
+              icon="🔥"
+            >
+              <ArticleGrid>
+                {trendingArticles.map(article => (
+                  <article
+                    key={article.id}
+                    className="min-w-0 overflow-hidden rounded-2xl"
+                  >
+                    <div className="flex min-h-10 items-center bg-gradient-to-r from-[#b99530] to-[#ddc25f] px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-black">
+                      ❤️ {article.likes || 0} likes
+                    </div>
+
+                    <NewsCard {...article} />
+                  </article>
+                ))}
+              </ArticleGrid>
+            </NewsSection>
+          )}
+
+          {mostDiscussed.length > 0 && (
+            <NewsSection
+              eyebrow="Community conversation"
+              title="Most Discussed"
+              icon="💬"
+            >
+              <ArticleGrid>
+                {mostDiscussed.map(article => (
+                  <article
+                    key={article.id}
+                    className="min-w-0 overflow-hidden rounded-2xl"
+                  >
+                    <div className="flex min-h-10 items-center border border-b-0 border-white/10 bg-[#141414] px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-[#d4af37]">
+                      💬 {article.comments}{' '}
+                      {article.comments === 1
+                        ? 'comment'
+                        : 'comments'}
+                    </div>
+
+                    <NewsCard {...article} />
+                  </article>
+                ))}
+              </ArticleGrid>
+            </NewsSection>
+          )}
+
+          {!usingLiveNews && (
+            <>
+              {aiNews.length > 0 && (
+                <NewsSection
+                  eyebrow="Artificial intelligence"
+                  title="AI News"
+                  icon="🤖"
+                  viewAllLink="/category/ai"
+                >
+                  <ArticleGrid>
+                    {aiNews.slice(0, 4).map(article => (
+                      <div key={article.id} className="min-w-0">
+                        <NewsCard {...article} />
+                      </div>
+                    ))}
+                  </ArticleGrid>
+                </NewsSection>
+              )}
+
+              {startupNews.length > 0 && (
+                <NewsSection
+                  eyebrow="Founders and innovation"
+                  title="Startup News"
+                  icon="🚀"
+                  viewAllLink="/category/startups"
+                >
+                  <ArticleGrid>
+                    {startupNews.slice(0, 4).map(article => (
+                      <div key={article.id} className="min-w-0">
+                        <NewsCard {...article} />
+                      </div>
+                    ))}
+                  </ArticleGrid>
+                </NewsSection>
+              )}
+
+              {securityNews.length > 0 && (
+                <NewsSection
+                  eyebrow="Digital defence"
+                  title="Cybersecurity News"
+                  icon="🔐"
+                  viewAllLink="/category/security"
+                >
+                  <ArticleGrid>
+                    {securityNews.slice(0, 4).map(article => (
+                      <div key={article.id} className="min-w-0">
+                        <NewsCard {...article} />
+                      </div>
+                    ))}
+                  </ArticleGrid>
+                </NewsSection>
+              )}
+            </>
+          )}
+
+          <NewsSection
+            eyebrow={
+              usingLiveNews
+                ? 'Updated from live sources'
+                : 'The latest from VedaByte'
+            }
+            title="Latest Technology News"
+            icon="📰"
+          >
+            <ArticleGrid>
+              {articles.map(article => (
+                <div key={article.id} className="min-w-0">
+                  <NewsCard {...article} />
+                </div>
+              ))}
+            </ArticleGrid>
+          </NewsSection>
+
+          <div className="vb-slide-up mt-14 sm:mt-16 lg:mt-20">
+  <Newsletter />
+</div>
         </div>
-      )}
-
-      {trendingArticles.length > 0 && (
-        <>
-          <h2 style={sectionTitleStyle}>🔥 Trending Now</h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-              gap: '25px',
-              marginBottom: '60px'
-            }}
-          >
-            {trendingArticles.map(article => (
-              <div key={article.id}>
-                <div
-                  style={{
-                    background: '#D4AF37',
-                    color: '#000',
-                    padding: '8px 12px',
-                    borderRadius: '10px 10px 0 0',
-                    fontWeight: '800',
-                    fontSize: '13px'
-                  }}
-                >
-                  ❤️ {article.likes} Likes
-                </div>
-
-                <NewsCard {...article} />
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {mostDiscussed.length > 0 && (
-        <>
-          <h2 style={sectionTitleStyle}>💬 Most Discussed</h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-              gap: '25px',
-              marginBottom: '60px'
-            }}
-          >
-            {mostDiscussed.map(article => (
-              <div key={article.id}>
-                <div
-                  style={{
-                    background: '#111111',
-                    border: '1px solid #232323',
-                    borderBottom: 'none',
-                    color: '#D4AF37',
-                    padding: '8px 12px',
-                    borderRadius: '10px 10px 0 0',
-                    fontWeight: '800',
-                    fontSize: '13px'
-                  }}
-                >
-                  💬 {article.comments} Comment{article.comments !== 1 ? 's' : ''}
-                </div>
-
-                <NewsCard {...article} />
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {!usingLiveNews && (
-        <>
-          <h2 style={sectionTitleStyle}>🤖 AI News</h2>
-
-          <div style={gridStyle}>
-            {aiNews.slice(0, 4).map(article => (
-              <NewsCard key={article.id} {...article} />
-            ))}
-          </div>
-
-          <h2 style={sectionTitleStyle}>🚀 Startup News</h2>
-
-          <div style={gridStyle}>
-            {startupNews.slice(0, 4).map(article => (
-              <NewsCard key={article.id} {...article} />
-            ))}
-          </div>
-
-          <h2 style={sectionTitleStyle}>🔐 Cybersecurity News</h2>
-
-          <div style={gridStyle}>
-            {securityNews.slice(0, 4).map(article => (
-              <NewsCard key={article.id} {...article} />
-            ))}
-          </div>
-        </>
-      )}
-
-      <h2 style={sectionTitleStyle}>
-        📰 Latest Technology News
-      </h2>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-          gap: '25px'
-        }}
-      >
-        {articles.map(article => (
-          <NewsCard key={article.id} {...article} />
-        ))}
-      </div>
-
-      <Newsletter />
-    </div>
+      </main>
+    </>
   )
 }
 
-const sectionTitleStyle = {
-  color: '#D4AF37',
-  fontSize: '32px',
-  marginBottom: '25px'
+function NewsSection({
+  eyebrow,
+  title,
+  icon,
+  viewAllLink,
+  children
+}) {
+  return (
+    <section className="mb-12 min-w-0 sm:mb-14 lg:mb-16">
+      <header className="mb-5 flex min-w-0 items-end justify-between gap-4 border-b border-white/10 pb-4 sm:mb-6">
+        <div className="min-w-0">
+          {eyebrow && (
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8f897e] sm:text-xs">
+              {eyebrow}
+            </p>
+          )}
+
+          <h2 className="flex min-w-0 items-center gap-2.5 text-[clamp(1.45rem,4vw,2.15rem)] font-bold leading-tight tracking-[-0.03em] text-[#fff8e9]">
+            <span aria-hidden="true" className="shrink-0">
+              {icon}
+            </span>
+
+            <span>{title}</span>
+          </h2>
+        </div>
+
+        {viewAllLink && (
+          <Link
+            to={viewAllLink}
+            className="vb-underline hidden shrink-0 text-sm font-bold text-[#d4af37] no-underline sm:inline-flex"
+          >
+            View all
+          </Link>
+        )}
+      </header>
+
+      {children}
+    </section>
+  )
 }
 
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
-  gap: '25px',
-  marginBottom: '60px'
+function ArticleGrid({ children }) {
+  return (
+    <div className="vb-stagger grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
+      {children}
+    </div>
+  )
 }

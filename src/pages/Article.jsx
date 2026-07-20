@@ -2,11 +2,21 @@ import { Link, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 import news from '../data/news'
+
 import { useAuth } from '../context/AuthContext'
+
 import { saveBookmark } from '../services/bookmarkService'
 import { getEditedArticleMap } from '../services/articleAdminService'
+
 import PremiumArticleGate from '../components/PremiumArticleGate'
 import AISummary from '../components/AISummary'
+
+import SEO from '../components/SEO'
+import StructuredData from '../components/StructuredData'
+import createArticleSchema from '../seo/articleSchema'
+import createBreadcrumbSchema from '../seo/breadcrumbSchema'
+
+import { handleImageError } from '../lib/imageFallback'
 
 import {
   getLikeCount,
@@ -23,14 +33,22 @@ import {
 
 export default function Article() {
   const { id } = useParams()
-  const { user, isAuthenticated } = useAuth()
+
+  const {
+    user,
+    isAuthenticated
+  } = useAuth()
 
   const [saved, setSaved] = useState(false)
+
   const [liked, setLiked] = useState(false)
+
   const [likeCount, setLikeCount] = useState(0)
 
   const [comments, setComments] = useState([])
+
   const [commentText, setCommentText] = useState('')
+
   const [commentLoading, setCommentLoading] = useState(false)
 
   const editedMap = getEditedArticleMap()
@@ -48,23 +66,30 @@ export default function Article() {
     `vedabyte_live_article_${id}`
   )
 
-  
-
   const liveArticle = savedLiveArticle
     ? JSON.parse(savedLiveArticle)
     : null
 
-  const article = mergedLocalArticle || liveArticle
+  const article =
+    mergedLocalArticle ||
+    liveArticle
 
   useEffect(() => {
     async function loadLikes() {
       if (!article) return
 
-      const count = await getLikeCount(article.id)
+      const count =
+        await getLikeCount(article.id)
+
       setLikeCount(count)
 
       if (isAuthenticated && user) {
-        const alreadyLiked = await hasUserLiked(user.id, article.id)
+        const alreadyLiked =
+          await hasUserLiked(
+            user.id,
+            article.id
+          )
+
         setLiked(alreadyLiked)
       }
     }
@@ -76,7 +101,9 @@ export default function Article() {
     async function loadComments() {
       if (!article) return
 
-      const data = await getComments(article.id)
+      const data =
+        await getComments(article.id)
+
       setComments(data)
     }
 
@@ -84,60 +111,60 @@ export default function Article() {
   }, [article])
 
   useEffect(() => {
-  if (!article) return
+    if (!article) return
 
-  localStorage.setItem(
-    'vedabyte_continue_reading',
-    JSON.stringify({
+    localStorage.setItem(
+      'vedabyte_continue_reading',
+      JSON.stringify({
+        id: article.id,
+        title: article.title,
+        category: article.category
+      })
+    )
+  }, [article])
+
+  useEffect(() => {
+    if (!article) return
+
+    const savedHistory =
+      localStorage.getItem(
+        'vedabyte_reading_history'
+      )
+
+    const history =
+      savedHistory
+        ? JSON.parse(savedHistory)
+        : []
+
+    const current = {
       id: article.id,
       title: article.title,
       category: article.category
-    })
-  )
-}, [article])
+    }
 
-useEffect(() => {
-  if (!article) return
+    const updatedHistory = [
+      current,
+      ...history.filter(
+        item => item.id !== article.id
+      )
+    ].slice(0, 10)
 
-  const saved = localStorage.getItem('vedabyte_reading_history')
-  const history = saved ? JSON.parse(saved) : []
-
-  const current = {
-    id: article.id,
-    title: article.title,
-    category: article.category
-  }
-
-  const updatedHistory = [
-    current,
-    ...history.filter(item => item.id !== article.id)
-  ].slice(0, 10)
-
-  localStorage.setItem(
-    'vedabyte_reading_history',
-    JSON.stringify(updatedHistory)
-  )
-}, [article])
+    localStorage.setItem(
+      'vedabyte_reading_history',
+      JSON.stringify(updatedHistory)
+    )
+  }, [article])
 
   if (!article) {
     return (
-      <div
-        style={{
-          color: '#fff',
-          textAlign: 'center',
-          padding: '100px 20px'
-        }}
-      >
+      <div className="article-not-found">
         <h1>Article not found</h1>
 
-        <Link
-          to="/"
-          style={{
-            color: '#D4AF37',
-            display: 'inline-block',
-            marginTop: '20px'
-          }}
-        >
+        <p>
+          This article does not exist.
+        </p>
+
+        <Link to="/">
           Back to Home
         </Link>
       </div>
@@ -162,7 +189,11 @@ useEffect(() => {
       return
     }
 
-    const success = await saveBookmark(user.id, article)
+    const success =
+      await saveBookmark(
+        user.id,
+        article
+      )
 
     if (success) {
       setSaved(true)
@@ -176,17 +207,29 @@ useEffect(() => {
     }
 
     if (liked) {
-      const success = await unlikeArticle(user.id, article.id)
+      const success =
+        await unlikeArticle(
+          user.id,
+          article.id
+        )
 
       if (success) {
         setLiked(false)
-        setLikeCount(prev => Math.max(prev - 1, 0))
+
+        setLikeCount(prev =>
+          Math.max(prev - 1, 0)
+        )
       }
     } else {
-      const success = await likeArticle(user.id, article.id)
+      const success =
+        await likeArticle(
+          user.id,
+          article.id
+        )
 
       if (success) {
         setLiked(true)
+
         setLikeCount(prev => prev + 1)
       }
     }
@@ -204,498 +247,375 @@ useEffect(() => {
 
     setCommentLoading(true)
 
-    const success = await addComment(
-      user.id,
-      article.id,
-      commentText.trim()
-    )
+    const success =
+      await addComment(
+        user.id,
+        article.id,
+        commentText.trim()
+      )
 
     if (success) {
       setCommentText('')
-      const updatedComments = await getComments(article.id)
-      setComments(updatedComments)
+
+      const updated =
+        await getComments(article.id)
+
+      setComments(updated)
     }
 
     setCommentLoading(false)
   }
 
-  async function handleDeleteComment(commentId) {
-    const success = await deleteComment(commentId)
+  async function handleDeleteComment(
+    commentId
+  ) {
+    const success =
+      await deleteComment(commentId)
 
     if (success) {
       setComments(prev =>
-        prev.filter(comment => comment.id !== commentId)
+        prev.filter(
+          comment =>
+            comment.id !== commentId
+        )
       )
     }
   }
 
-  const ArticlePreviewContent = (
-  <>
-    <div
-      style={{
-        marginTop: '45px',
-        fontSize: '18px',
-        lineHeight: '1.9',
-        color: '#D1D5DB',
-        background: '#111111',
-        border: '1px solid #232323',
-        borderRadius: '20px',
-        padding: '28px'
-      }}
+    const ArticlePreviewContent = (
+    <section className="article-content">
+      <div className="article-content-card">
+        <p>{article.description}</p>
 
-      
-    >
-      <p>{article.description}</p>
-<AISummary article={article} />
-      <br />
+        <div className="article-ai-summary">
+          <AISummary article={article} />
+        </div>
 
-      <p>
-        This development reflects how quickly the technology industry is
-        changing. Companies are investing heavily in artificial intelligence,
-        cloud platforms, cybersecurity, developer tools and connected devices
-        to remain competitive.
-      </p>
-    </div>
-  </>
-)
-
-
-
-const ArticleLockedContent = (
-  <>
-    <div
-      style={{
-        marginTop: '35px',
-        background: '#111111',
-        border: '1px solid #232323',
-        borderRadius: '20px',
-        padding: '28px'
-      }}
-    >
-      <h2 style={{ color: '#D4AF37', marginBottom: '18px' }}>
-        Key Points
-      </h2>
-
-      <ul
-        style={{
-          color: '#D1D5DB',
-          lineHeight: '2',
-          paddingLeft: '22px'
-        }}
-      >
-        <li>This story highlights an important shift in the technology sector.</li>
-        <li>The update may impact consumers, startups, developers, or enterprise users.</li>
-        <li>VedaByte will continue tracking related developments as the story evolves.</li>
-      </ul>
-    </div>
-
-    <div
-      style={{
-        marginTop: '30px',
-        background: '#111111',
-        border: '1px solid #232323',
-        borderRadius: '20px',
-        padding: '28px'
-      }}
-    >
-      <h2 style={{ color: '#D4AF37', marginBottom: '18px' }}>
-        Why It Matters
-      </h2>
-
-      <p
-        style={{
-          color: '#D1D5DB',
-          lineHeight: '1.9',
-          fontSize: '17px'
-        }}
-      >
-        Technology news often moves quickly, but the larger impact comes
-        from how these changes affect businesses, builders and everyday
-        users. This story is part of a wider shift toward smarter products,
-        faster platforms and more connected digital experiences.
-      </p>
-    </div>
-
-    {article.isLive && (
-      <div
-        style={{
-          marginTop: '30px',
-          background: '#0F172A',
-          border: '1px solid #232323',
-          borderRadius: '20px',
-          padding: '24px'
-        }}
-      >
-        <h3 style={{ color: '#D4AF37', marginBottom: '10px' }}>
-          Original Reporting
-        </h3>
-
-        <p style={{ color: '#D1D5DB', lineHeight: '1.7' }}>
-          This live article is sourced from{' '}
-          {article.source || 'an external publisher'}. VedaByte provides a
-          clean reading view, summary context and bookmark support.
+        <p>
+          This development reflects how quickly the technology industry is
+          changing. Companies are investing heavily in artificial intelligence,
+          cloud platforms, cybersecurity, developer tools and connected devices
+          to remain competitive.
         </p>
       </div>
-    )}
-  </>
-)
+    </section>
+  )
+
+  const ArticleLockedContent = (
+    <section className="article-content">
+      <div className="article-content-card">
+        <h2 className="article-content-heading">
+          Key Points
+        </h2>
+
+        <ul>
+          <li>
+            This story highlights an important shift in the technology sector.
+          </li>
+
+          <li>
+            The update may impact consumers, startups, developers and enterprise
+            users.
+          </li>
+
+          <li>
+            VedaByte will continue tracking related developments as the story
+            evolves.
+          </li>
+        </ul>
+      </div>
+
+      <div className="article-content-card">
+        <h2 className="article-content-heading">
+          Why It Matters
+        </h2>
+
+        <p>{article.description}</p>
+      </div>
+
+      {article.isLive && (
+        <div className="article-content-card article-content-card--source">
+          <h2 className="article-content-heading">
+            Original Reporting
+          </h2>
+
+          <p>
+            This live article is sourced from{' '}
+            {article.source || 'an external publisher'}.
+            VedaByte provides a clean reading view,
+            AI summary and bookmark support.
+          </p>
+        </div>
+      )}
+    </section>
+  )
 
   return (
-    <div
-      style={{
-        maxWidth: '1100px',
-        margin: '0 auto',
-        padding: '40px 20px',
-        color: '#fff'
-      }}
-    >
-      <Link
-        to="/"
-        style={{
-          color: '#D4AF37',
-          fontWeight: '700',
-          display: 'inline-block',
-          marginBottom: '25px'
-        }}
-      >
-        ← Back to Home
-      </Link>
-
-      <img
-        src={article.image}
-        alt={article.title}
-        style={{
-          width: '100%',
-          height: '460px',
-          objectFit: 'cover',
-          borderRadius: '22px',
-          border: '1px solid #232323'
-        }}
+    <>
+      <SEO
+        title={`${article.title} | VedaByte`}
+        description={
+          article.description ||
+          'Read the latest AI, startup and technology news on VedaByte.'
+        }
+        image={
+          article.image ||
+          'https://vedabyte-delta.vercel.app/og-image.png'
+        }
+        url={`https://vedabyte-delta.vercel.app/article/${article.id}`}
+        type="article"
       />
 
-      <div style={{ marginTop: '30px' }}>
-        <span
-          style={{
-            color: '#000',
-            background: '#D4AF37',
-            fontWeight: '800',
-            textTransform: 'uppercase',
-            padding: '8px 12px',
-            borderRadius: '999px',
-            fontSize: '12px'
-          }}
+      <StructuredData
+        data={createArticleSchema(article)}
+      />
+
+      <StructuredData
+        data={createBreadcrumbSchema([
+          {
+            name: 'Home',
+            url: 'https://vedabyte-delta.vercel.app/'
+          },
+          {
+            name: article.category || 'Technology',
+            url: `https://vedabyte-delta.vercel.app/category/${(
+              article.category || 'technology'
+            ).toLowerCase()}`
+          },
+          {
+            name: article.title,
+            url: `https://vedabyte-delta.vercel.app/article/${article.id}`
+          }
+        ])}
+      />
+
+      <div className="article-page">
+
+        <Link
+          to="/"
+          className="article-back-link"
         >
-          {article.category}
-        </span>
+          ← Back to Home
+        </Link>
 
-        {article.isPremium && (
-          <span
-            style={{
-              color: '#D4AF37',
-              border: '1px solid #D4AF37',
-              fontWeight: '800',
-              textTransform: 'uppercase',
-              padding: '7px 12px',
-              borderRadius: '999px',
-              fontSize: '12px',
-              marginLeft: '10px'
-            }}
-          >
-            PRO
-          </span>
-        )}
-
-        <h1
-          style={{
-            fontSize: '48px',
-            marginTop: '22px',
-            lineHeight: '1.15',
-            color: '#FFFFFF'
-          }}
-        >
-          {article.title}
-        </h1>
-
-        <p
-          style={{
-            color: '#9CA3AF',
-            marginTop: '15px',
-            fontSize: '15px'
-          }}
-        >
-          By {article.source || 'VedaByte Editorial'} •{' '}
-          {article.publishedAt
-            ? new Date(article.publishedAt).toLocaleDateString()
-            : 'June 2026'}{' '}
-          • 4 min read
-        </p>
-
-        <p
-          style={{
-            color: '#D1D5DB',
-            marginTop: '20px',
-            fontSize: '20px',
-            lineHeight: '1.7'
-          }}
-        >
-          {article.description}
-        </p>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap',
-            marginTop: '28px'
-          }}
-        >
-          <button
-            onClick={handleSave}
-            disabled={saved}
-            style={{
-              background: saved ? '#16a34a' : '#D4AF37',
-              color: '#000',
-              border: 'none',
-              padding: '13px 24px',
-              borderRadius: '12px',
-              fontWeight: '800',
-              cursor: saved ? 'default' : 'pointer'
-            }}
-          >
-            {saved ? '✓ Saved to Bookmarks' : 'Save Bookmark'}
-          </button>
-
-          <button
-            onClick={handleLike}
-            style={{
-              background: liked ? '#ef4444' : '#111111',
-              color: liked ? '#fff' : '#D4AF37',
-              border: '1px solid #232323',
-              padding: '13px 24px',
-              borderRadius: '12px',
-              fontWeight: '800',
-              cursor: 'pointer'
-            }}
-          >
-            {liked ? '♥ Liked' : '♡ Like'} • {likeCount}
-          </button>
-
-          {article.url && (
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: 'inline-block',
-                background: '#111111',
-                color: '#D4AF37',
-                border: '1px solid #232323',
-                padding: '13px 24px',
-                borderRadius: '12px',
-                fontWeight: '800',
-                textDecoration: 'none'
-              }}
-            >
-              Read Original Source
-            </a>
-          )}
+        <div className="article-hero">
+          <div className="article-hero-image-wrapper">
+            <img
+              src={article.image}
+              alt={article.title}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              onError={handleImageError}
+              width="1200"
+              height="675"
+              className="article-hero-image"
+            />
+          </div>
         </div>
 
-        {ArticlePreviewContent}
+        <header className="article-header">
 
-{article.isPremium ? (
-  <PremiumArticleGate>
-    {ArticleLockedContent}
-  </PremiumArticleGate>
-) : (
-  ArticleLockedContent
-)}
-      </div>
+          <div className="article-badges">
 
-      <section
-        style={{
-          marginTop: '60px',
-          background: '#111111',
-          border: '1px solid #232323',
-          borderRadius: '22px',
-          padding: '28px'
-        }}
-      >
-        <h2
-          style={{
-            color: '#D4AF37',
-            marginBottom: '20px',
-            fontSize: '30px'
-          }}
-        >
-          Comments • {comments.length}
-        </h2>
+            <span className="article-category-badge">
+              {article.category}
+            </span>
 
-        {isAuthenticated ? (
-          <form onSubmit={handleAddComment}>
-            <textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Share your thoughts..."
-              rows="4"
-              style={{
-                width: '100%',
-                background: '#0A0A0A',
-                color: '#FFFFFF',
-                border: '1px solid #232323',
-                borderRadius: '14px',
-                padding: '14px',
-                fontSize: '15px',
-                resize: 'vertical'
-              }}
-            />
+            {article.isPremium && (
+              <span className="article-premium-badge">
+                PRO
+              </span>
+            )}
+
+          </div>
+
+          <h1 className="article-title">
+            {article.title}
+          </h1>
+
+          <div className="article-meta">
+
+            <span className="article-meta__source">
+              {article.source || 'VedaByte Editorial'}
+            </span>
+
+            <span>•</span>
+
+            <span>
+              {article.publishedAt
+                ? new Date(article.publishedAt).toLocaleDateString()
+                : 'June 2026'}
+            </span>
+
+            <span>•</span>
+
+            <span>4 min read</span>
+
+          </div>
+
+          <p className="article-description">
+            {article.description}
+          </p>
+
+          <div className="article-actions">
 
             <button
-              type="submit"
-              disabled={commentLoading}
-              style={{
-                marginTop: '14px',
-                background: '#D4AF37',
-                color: '#000',
-                border: 'none',
-                padding: '12px 22px',
-                borderRadius: '10px',
-                fontWeight: '800',
-                cursor: 'pointer'
-              }}
+              onClick={handleSave}
+              disabled={saved}
+              className={`article-action-button ${
+                saved
+                  ? 'article-action-button--saved'
+                  : 'article-action-button--save'
+              }`}
             >
-              {commentLoading ? 'Posting...' : 'Post Comment'}
+              {saved
+                ? '✓ Saved to Bookmarks'
+                : 'Save Bookmark'}
             </button>
-          </form>
-        ) : (
-          <p style={{ color: '#9CA3AF' }}>
-            Please sign in to post a comment.
-          </p>
-        )}
 
-        <div style={{ marginTop: '28px' }}>
-          {comments.length === 0 ? (
-            <p style={{ color: '#9CA3AF' }}>
-              No comments yet. Be the first to comment.
-            </p>
-          ) : (
-            comments.map(comment => (
-              <div
-                key={comment.id}
-                style={{
-                  borderTop: '1px solid #232323',
-                  padding: '18px 0',
-                  color: '#D1D5DB'
-                }}
+            <button
+              onClick={handleLike}
+              className={`article-action-button ${
+                liked
+                  ? 'article-action-button--liked'
+                  : ''
+              }`}
+            >
+              {liked ? '♥ Liked' : '♡ Like'} • {likeCount}
+            </button>
+
+            {article.url && (
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noreferrer"
+                className="article-source-link"
               >
-                <p
-                  style={{
-                    color: '#FFFFFF',
-                    lineHeight: '1.7',
-                    marginBottom: '8px'
-                  }}
-                >
-                  {comment.content}
-                </p>
+                Read Original Source
+              </a>
+            )}
 
-                <p
-                  style={{
-                    color: '#6B7280',
-                    fontSize: '13px'
-                  }}
-                >
-                  {comment.created_at
-                    ? new Date(comment.created_at).toLocaleString()
-                    : 'Just now'}
-                </p>
-
-                {isAuthenticated && user?.id === comment.user_id && (
-                  <button
-                    onClick={() => handleDeleteComment(comment.id)}
-                    style={{
-                      marginTop: '8px',
-                      background: 'transparent',
-                      color: '#EF4444',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: '700'
-                    }}
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <div
-        style={{
-          marginTop: '60px',
-          paddingTop: '35px',
-          borderTop: '1px solid #232323'
-        }}
-      >
-        <h2
-          style={{
-            color: '#D4AF37',
-            fontSize: '30px',
-            marginBottom: '25px'
-          }}
-        >
-          Related Articles
-        </h2>
-
-        {relatedArticles.length === 0 ? (
-          <p style={{ color: '#9CA3AF' }}>
-            No related articles found.
-          </p>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))',
-              gap: '20px'
-            }}
-          >
-            {relatedArticles.map(item => (
-              <Link
-                key={item.id}
-                to={`/article/${item.id}`}
-                style={{
-                  background: '#111111',
-                  border: '1px solid #232323',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  color: '#fff',
-                  textDecoration: 'none'
-                }}
-              >
-                <span
-                  style={{
-                    color: '#D4AF37',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase'
-                  }}
-                >
-                  {item.category}
-                </span>
-
-                <h3
-                  style={{
-                    marginTop: '10px',
-                    lineHeight: '1.4'
-                  }}
-                >
-                  {item.title}
-                </h3>
-              </Link>
-            ))}
           </div>
-        )}
-      </div>
-    </div>
-  )
+
+          {ArticlePreviewContent}
+
+          {article.isPremium ? (
+            <PremiumArticleGate>
+              {ArticleLockedContent}
+            </PremiumArticleGate>
+          ) : (
+            ArticleLockedContent
+          )}
+          </header>
+          <section className="article-comments">
+            <h2 className="article-section-title">
+              Comments • {comments.length}
+            </h2>
+
+            {isAuthenticated ? (
+              <form
+                onSubmit={handleAddComment}
+                className="article-comment-form"
+              >
+                <textarea
+                  value={commentText}
+                  onChange={event =>
+                    setCommentText(event.target.value)
+                  }
+                  placeholder="Share your thoughts..."
+                  rows="4"
+                  className="article-comment-textarea"
+                />
+
+                <button
+                  type="submit"
+                  disabled={commentLoading}
+                  className="article-comment-submit"
+                >
+                  {commentLoading
+                    ? 'Posting...'
+                    : 'Post Comment'}
+                </button>
+              </form>
+            ) : (
+              <p className="article-comment-signin">
+                Please sign in to post a comment.
+              </p>
+            )}
+
+            <div className="article-comments-list">
+              {comments.length === 0 ? (
+                <p className="article-comments-empty">
+                  No comments yet. Be the first to comment.
+                </p>
+              ) : (
+                comments.map(comment => (
+                  <article
+                    key={comment.id}
+                    className="article-comment"
+                  >
+                    <p className="article-comment__content">
+                      {comment.content}
+                    </p>
+
+                    <p className="article-comment__date">
+                      {comment.created_at
+                        ? new Date(
+                            comment.created_at
+                          ).toLocaleString()
+                        : 'Just now'}
+                    </p>
+
+                    {isAuthenticated &&
+                      user?.id === comment.user_id && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteComment(
+                              comment.id
+                            )
+                          }
+                          className="article-comment__delete"
+                        >
+                          Delete
+                        </button>
+                      )}
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+                    <section className="article-related">
+            <h2 className="article-section-title">
+              Related Articles
+            </h2>
+
+            {relatedArticles.length === 0 ? (
+              <p className="article-related-empty">
+                No related articles found.
+              </p>
+            ) : (
+              <div className="article-related-grid">
+                {relatedArticles.map(item => (
+                  <Link
+                    key={item.id}
+                    to={`/article/${item.id}`}
+                    className="article-related-card"
+                  >
+                    <span className="article-related-card__category">
+                      {item.category}
+                    </span>
+
+                    <h3 className="article-related-card__title">
+                      {item.title}
+                    </h3>
+                  </Link>
+                ))}
+              </div>
+            )}
+                    </section>
+        </div>
+      </>
+    )
 }

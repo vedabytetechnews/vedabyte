@@ -1,90 +1,83 @@
+import SEO from '../components/SEO'
+
+const briefSections = [
+  {
+    title: 'Artificial Intelligence',
+    text:
+      'AI adoption continues to accelerate across enterprise software, developer tools and automation platforms. Companies are focusing on reasoning, coding assistance and workflow automation.'
+  },
+  {
+    title: 'Cybersecurity',
+    text:
+      'Security teams are watching a rise in AI-assisted phishing, identity attacks and automated social engineering campaigns.'
+  },
+  {
+    title: 'Startups',
+    text:
+      'AI-focused startups continue attracting investor interest, especially in infrastructure, productivity, cybersecurity and vertical AI tools.'
+  },
+  {
+    title: 'Cloud & Infrastructure',
+    text:
+      'Cloud providers are competing heavily around AI infrastructure, model deployment, GPU availability and enterprise AI services.'
+  }
+]
+
 export default function WeeklyBrief() {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#050505',
-        color: '#fff',
-        padding: '150px 20px 80px'
-      }}
-    >
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <p style={labelStyle}>WEEKLY INTELLIGENCE</p>
+    <>
+      <SEO
+        title="Week 27 Technology Brief | VedaByte Premium"
+        description="A premium weekly overview of major developments in AI, cybersecurity, startups, cloud infrastructure and emerging technology."
+        url="https://vedabyte-delta.vercel.app/premium/weekly-brief"
+      />
 
-        <h1 style={titleStyle}>
-          Week 27 Technology Brief
-        </h1>
+      <main className="weekly-brief-page">
+        <div className="weekly-brief-container">
+          <header className="weekly-brief-header">
+            <p className="weekly-brief-label">
+              WEEKLY INTELLIGENCE
+            </p>
 
-        <p style={introStyle}>
-          A premium weekly overview of the most important movements in AI,
-          cybersecurity, startups, cloud infrastructure and emerging technology.
-        </p>
+            <h1 className="weekly-brief-title">
+              Week 27 Technology Brief
+            </h1>
 
-        <section style={sectionStyle}>
-          <h2>Artificial Intelligence</h2>
-          <p>
-            AI adoption continues to accelerate across enterprise software,
-            developer tools and automation platforms. Companies are focusing on
-            reasoning, coding assistance and workflow automation.
-          </p>
-        </section>
+            <p className="weekly-brief-intro">
+              A premium weekly overview of the most important
+              movements in AI, cybersecurity, startups, cloud
+              infrastructure and emerging technology.
+            </p>
 
-        <section style={sectionStyle}>
-          <h2>Cybersecurity</h2>
-          <p>
-            Security teams are watching a rise in AI-assisted phishing, identity
-            attacks and automated social engineering campaigns.
-          </p>
-        </section>
+            <div className="weekly-brief-meta">
+              <span>July 2026</span>
+              <span aria-hidden="true">•</span>
+              <span>Premium Report</span>
+            </div>
+          </header>
 
-        <section style={sectionStyle}>
-          <h2>Startups</h2>
-          <p>
-            AI-focused startups continue attracting investor interest, especially
-            in infrastructure, productivity, cybersecurity and vertical AI tools.
-          </p>
-        </section>
+          <section
+            className="weekly-brief-sections"
+            aria-label="Weekly technology intelligence sections"
+          >
+            {briefSections.map((section, index) => (
+              <article
+                key={section.title}
+                className="weekly-brief-card"
+              >
+                <div className="weekly-brief-card-number">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
 
-        <section style={sectionStyle}>
-          <h2>Cloud & Infrastructure</h2>
-          <p>
-            Cloud providers are competing heavily around AI infrastructure,
-            model deployment, GPU availability and enterprise AI services.
-          </p>
-        </section>
-      </div>
-    </div>
+                <div className="weekly-brief-card-content">
+                  <h2>{section.title}</h2>
+                  <p>{section.text}</p>
+                </div>
+              </article>
+            ))}
+          </section>
+        </div>
+      </main>
+    </>
   )
-}
-
-const labelStyle = {
-  color: '#D4AF37',
-  letterSpacing: '0.3em',
-  fontSize: '11px',
-  fontWeight: '900',
-  textTransform: 'uppercase',
-  marginBottom: '16px'
-}
-
-const titleStyle = {
-  fontSize: 'clamp(42px, 7vw, 78px)',
-  lineHeight: '1.05',
-  marginBottom: '24px'
-}
-
-const introStyle = {
-  color: '#A1A1AA',
-  fontSize: '18px',
-  lineHeight: '1.8',
-  marginBottom: '40px'
-}
-
-const sectionStyle = {
-  background: 'linear-gradient(145deg, #111111, #070707)',
-  border: '1px solid rgba(212,175,55,0.22)',
-  borderRadius: '24px',
-  padding: '28px',
-  marginBottom: '24px',
-  color: '#D1D5DB',
-  lineHeight: '1.8'
 }

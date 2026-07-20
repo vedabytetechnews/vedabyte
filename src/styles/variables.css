@@ -1,0 +1,293 @@
+:root {
+  /* =========================================
+     VEDABYTE — OBSIDIAN GOLD DESIGN SYSTEM
+     ========================================= */
+
+  color-scheme: dark;
+
+  /* Brand — Champagne Gold */
+  --vb-gold-50: #fffaf0;
+  --vb-gold-100: #f8edcf;
+  --vb-gold-200: #eddca9;
+  --vb-gold-300: #e2ca83;
+  --vb-gold-400: #d4b967;
+  --vb-gold-500: #c7a84f;
+  --vb-gold-600: #aa8737;
+  --vb-gold-700: #876928;
+  --vb-gold-800: #624b1d;
+  --vb-gold-900: #403113;
+
+  --vb-gold: var(--vb-gold-500);
+  --vb-gold-light: var(--vb-gold-300);
+  --vb-gold-dark: var(--vb-gold-700);
+
+  /* Backgrounds — Obsidian */
+  --vb-bg: #060606;
+  --vb-bg-secondary: #0a0a0a;
+  --vb-bg-tertiary: #0f0f0f;
+
+  /* Surfaces — Graphite */
+  --vb-surface: #121212;
+  --vb-surface-raised: #171717;
+  --vb-surface-elevated: #1b1b1b;
+  --vb-surface-hover: #202020;
+  --vb-surface-active: #252525;
+
+  /* Text — Soft Ivory */
+  --vb-text: #f4efe4;
+  --vb-text-secondary: #c8c1b3;
+  --vb-text-muted: #928d83;
+  --vb-text-subtle: #69655f;
+  --vb-text-disabled: #4f4c47;
+  --vb-text-on-gold: #0b0905;
+
+  /* Borders */
+  --vb-border: #292724;
+  --vb-border-soft: #201f1d;
+  --vb-border-strong: #3a3732;
+  --vb-border-gold: rgba(199, 168, 79, 0.34);
+  --vb-border-gold-strong: rgba(226, 202, 131, 0.62);
+
+  /* Transparent Gold */
+  --vb-gold-soft: rgba(199, 168, 79, 0.07);
+  --vb-gold-subtle: rgba(199, 168, 79, 0.11);
+  --vb-gold-medium: rgba(199, 168, 79, 0.16);
+  --vb-gold-glow: rgba(199, 168, 79, 0.19);
+
+  /* Status */
+  --vb-success: #5bc88a;
+  --vb-success-bg: rgba(91, 200, 138, 0.1);
+  --vb-success-border: rgba(91, 200, 138, 0.3);
+
+  --vb-warning: #d7aa45;
+  --vb-warning-bg: rgba(215, 170, 69, 0.1);
+  --vb-warning-border: rgba(215, 170, 69, 0.3);
+
+  --vb-danger: #e16e6e;
+  --vb-danger-strong: #c94d4d;
+  --vb-danger-bg: rgba(225, 110, 110, 0.1);
+  --vb-danger-border: rgba(225, 110, 110, 0.3);
+
+  --vb-info: #6ba9c8;
+  --vb-info-bg: rgba(107, 169, 200, 0.1);
+  --vb-info-border: rgba(107, 169, 200, 0.3);
+
+  /* Typography */
+  --vb-font-display:
+    "Syne",
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --vb-font-body:
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --vb-font-editorial:
+    "Source Serif 4",
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  --vb-font-mono:
+    "JetBrains Mono",
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+
+  /* Font Sizes */
+  --vb-text-xs: 0.75rem;
+  --vb-text-sm: 0.875rem;
+  --vb-text-base: 1rem;
+  --vb-text-lg: 1.125rem;
+  --vb-text-xl: 1.25rem;
+  --vb-text-2xl: 1.5rem;
+  --vb-text-3xl: 1.875rem;
+  --vb-text-4xl: 2.25rem;
+  --vb-text-5xl: 3rem;
+  --vb-text-6xl: 3.75rem;
+  --vb-text-7xl: 4.5rem;
+
+  /* Font Weights */
+  --vb-weight-regular: 400;
+  --vb-weight-medium: 500;
+  --vb-weight-semibold: 600;
+  --vb-weight-bold: 700;
+  --vb-weight-extrabold: 800;
+  --vb-weight-black: 900;
+
+  /* Line Heights */
+  --vb-leading-none: 1;
+  --vb-leading-tight: 1.1;
+  --vb-leading-snug: 1.25;
+  --vb-leading-normal: 1.5;
+  --vb-leading-relaxed: 1.7;
+  --vb-leading-loose: 1.85;
+
+  /* Letter Spacing */
+  --vb-tracking-tight: -0.035em;
+  --vb-tracking-normal: 0;
+  --vb-tracking-wide: 0.08em;
+  --vb-tracking-wider: 0.16em;
+  --vb-tracking-widest: 0.26em;
+
+  /* Spacing */
+  --vb-space-1: 0.25rem;
+  --vb-space-2: 0.5rem;
+  --vb-space-3: 0.75rem;
+  --vb-space-4: 1rem;
+  --vb-space-5: 1.25rem;
+  --vb-space-6: 1.5rem;
+  --vb-space-7: 1.75rem;
+  --vb-space-8: 2rem;
+  --vb-space-10: 2.5rem;
+  --vb-space-12: 3rem;
+  --vb-space-14: 3.5rem;
+  --vb-space-16: 4rem;
+  --vb-space-20: 5rem;
+  --vb-space-24: 6rem;
+  --vb-space-28: 7rem;
+  --vb-space-32: 8rem;
+
+  /* Layout */
+  --vb-container-sm: 760px;
+  --vb-container-md: 960px;
+  --vb-container: 1280px;
+  --vb-container-wide: 1440px;
+
+  --vb-page-padding: 24px;
+  --vb-page-padding-tablet: 18px;
+  --vb-page-padding-mobile: 14px;
+
+  --vb-navbar-height: 72px;
+
+  --vb-section-space: 80px;
+  --vb-section-space-tablet: 64px;
+  --vb-section-space-mobile: 48px;
+
+  /* Radius */
+  --vb-radius-xs: 6px;
+  --vb-radius-sm: 10px;
+  --vb-radius-md: 14px;
+  --vb-radius-lg: 18px;
+  --vb-radius-xl: 24px;
+  --vb-radius-2xl: 30px;
+  --vb-radius-pill: 999px;
+  --vb-radius-round: 50%;
+
+  /* Shadows */
+  --vb-shadow-xs:
+    0 1px 2px rgba(0, 0, 0, 0.32);
+
+  --vb-shadow-sm:
+    0 8px 24px rgba(0, 0, 0, 0.22);
+
+  --vb-shadow-md:
+    0 18px 48px rgba(0, 0, 0, 0.32);
+
+  --vb-shadow-lg:
+    0 30px 80px rgba(0, 0, 0, 0.46);
+
+  --vb-shadow-gold:
+    0 0 0 1px rgba(199, 168, 79, 0.07),
+    0 20px 60px rgba(199, 168, 79, 0.08);
+
+  --vb-shadow-focus:
+    0 0 0 3px rgba(199, 168, 79, 0.16);
+
+  /* Gradients */
+  --vb-gradient-page:
+    radial-gradient(
+      circle at 50% -12%,
+      rgba(199, 168, 79, 0.06),
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      #090909 0%,
+      #060606 100%
+    );
+
+  --vb-gradient-surface:
+    linear-gradient(
+      145deg,
+      rgba(24, 24, 23, 0.98),
+      rgba(12, 12, 11, 0.98)
+    );
+
+  --vb-gradient-surface-soft:
+    linear-gradient(
+      145deg,
+      rgba(20, 20, 19, 0.96),
+      rgba(10, 10, 9, 0.98)
+    );
+
+  --vb-gradient-gold:
+    linear-gradient(
+      135deg,
+      #b8933f 0%,
+      #dfc77d 55%,
+      #c5a34e 100%
+    );
+
+  --vb-gradient-gold-hover:
+    linear-gradient(
+      135deg,
+      #c6a751 0%,
+      #ead799 55%,
+      #d0b160 100%
+    );
+
+  --vb-gradient-border:
+    linear-gradient(
+      135deg,
+      rgba(226, 202, 131, 0.58),
+      rgba(135, 105, 40, 0.14)
+    );
+
+  /* Transitions */
+  --vb-transition-fast: 150ms ease;
+  --vb-transition: 220ms ease;
+  --vb-transition-slow: 360ms ease;
+
+  /* Layering */
+  --vb-z-base: 1;
+  --vb-z-raised: 10;
+  --vb-z-dropdown: 100;
+  --vb-z-navbar: 500;
+  --vb-z-overlay: 900;
+  --vb-z-modal: 1000;
+
+  /* Compatibility Aliases
+     Existing pages can continue using old variables
+     while we redesign them gradually. */
+  --primary: var(--vb-gold);
+  --bg: var(--vb-bg);
+  --surface: var(--vb-surface);
+  --text: var(--vb-text);
+  --muted: var(--vb-text-muted);
+  --border: var(--vb-border);
+}
+
+@media (max-width: 900px) {
+  :root {
+    --vb-page-padding: var(--vb-page-padding-tablet);
+    --vb-section-space: var(--vb-section-space-tablet);
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --vb-page-padding: var(--vb-page-padding-mobile);
+    --vb-section-space: var(--vb-section-space-mobile);
+    --vb-navbar-height: 66px;
+  }
+}
