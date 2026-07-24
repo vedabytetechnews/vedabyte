@@ -31,10 +31,10 @@ export default async function handler(req, res) {
     console.log('Node:', process.version)
 
     console.log('Environment:', {
-  groq: !!process.env.GROQ_API_KEY,
-  supabaseUrl: !!process.env.SUPABASE_URL,
-  serviceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-})
+      groq: !!process.env.GROQ_API_KEY,
+      supabaseUrl: !!process.env.SUPABASE_URL,
+      serviceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    })
 
     const { title, description, userId } = req.body || {}
 
@@ -62,7 +62,6 @@ export default async function handler(req, res) {
         .maybeSingle()
 
     if (subscriptionError) {
-      console.error('SUPABASE ERROR')
       console.error(subscriptionError)
 
       return res.status(500).json({
@@ -101,40 +100,53 @@ export default async function handler(req, res) {
     }
 
     const prompt = `
-You are VedaByte Intelligence.
+You are VedaByte Intelligence, the premium AI analyst for VedaByte.
 
-Summarize this technology article.
+Summarize the following technology article.
 
 Title:
-${title}
+${title || "Untitled"}
 
 Description:
-${description}
+${description || "No description"}
 
-Return exactly four concise bullet points.
+Write EXACTLY four bullet points.
+
+Rules:
+- Each bullet under 22 words.
+- Focus only on important facts.
+- Professional editorial tone.
+- No introduction.
+- No conclusion.
+- No markdown headings.
+- No emojis.
+- No hype.
+- No speculation.
+- Don't repeat the title.
+- Write for developers, founders, startup operators, cybersecurity professionals and technology readers.
 `
 
     console.log('Calling Groq...')
 
-const response = await ai.chat.completions.create({
-  model: 'llama-3.3-70b-versatile',
-  messages: [
-    {
-      role: 'user',
-      content: prompt
-    }
-  ],
-  temperature: 0.4,
-  max_tokens: 300
-})
+    const response = await ai.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 300
+    })
 
-console.log('Groq response received.')
+    console.log('Groq response received.')
 
-const summary =
-  response.choices?.[0]?.message?.content || ''
+    const summary =
+      response.choices?.[0]?.message?.content?.trim() || ''
 
-    if (!summary.trim()) {
-      throw new Error('Gemini returned an empty response.')
+    if (!summary) {
+      throw new Error('Groq returned an empty response.')
     }
 
     const { error: insertError } = await supabase
@@ -161,15 +173,10 @@ const summary =
   } catch (err) {
 
     console.error('========== AI SUMMARY ERROR ==========')
-
     console.error(err)
 
-    console.error('Message:', err.message)
-
-    console.error('Stack:', err.stack)
-
     return res.status(500).json({
-      error: err.message
+      error: err.message || 'Unable to generate summary.'
     })
   }
 }
