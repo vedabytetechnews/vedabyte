@@ -1,8 +1,8 @@
-import { GoogleGenAI } from '@google/genai'
+import Groq from 'groq-sdk'
 import { createClient } from '@supabase/supabase-js'
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
+const ai = new Groq({
+  apiKey: process.env.GROQ_API_KEY
 })
 
 const supabase = createClient(
@@ -31,10 +31,10 @@ export default async function handler(req, res) {
     console.log('Node:', process.version)
 
     console.log('Environment:', {
-      gemini: !!process.env.GEMINI_API_KEY,
-      supabaseUrl: !!process.env.SUPABASE_URL,
-      serviceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-    })
+  groq: !!process.env.GROQ_API_KEY,
+  supabaseUrl: !!process.env.SUPABASE_URL,
+  serviceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+})
 
     const { title, description, userId } = req.body || {}
 
@@ -114,16 +114,24 @@ ${description}
 Return exactly four concise bullet points.
 `
 
-    console.log('Calling Gemini...')
+    console.log('Calling Groq...')
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
-    })
+const response = await ai.chat.completions.create({
+  model: 'llama-3.3-70b-versatile',
+  messages: [
+    {
+      role: 'user',
+      content: prompt
+    }
+  ],
+  temperature: 0.4,
+  max_tokens: 300
+})
 
-    console.log('Gemini response received.')
+console.log('Groq response received.')
 
-    const summary = response.text || ''
+const summary =
+  response.choices?.[0]?.message?.content || ''
 
     if (!summary.trim()) {
       throw new Error('Gemini returned an empty response.')
